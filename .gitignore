@@ -1,3 +1,4 @@
 *.db
 *.venv
 dump_project.py
+dump.txt

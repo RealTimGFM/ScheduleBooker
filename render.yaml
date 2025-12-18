@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: schedulebooker-web
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    envVars:
+      - key: FLASK_APP
+        value: wsgi.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: schedulebooker-db
+          property: connectionString
+
+databases:
+  - name: schedulebooker-db
+    plan: free

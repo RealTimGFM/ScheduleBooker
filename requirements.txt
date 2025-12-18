@@ -3,3 +3,5 @@ Flask-SQLAlchemy
 Flask-Migrate
 Flask-Login
 python-dotenv
+gunicorn>=21.2
+psycopg2-binary>=2.9
