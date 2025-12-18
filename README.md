@@ -59,3 +59,8 @@ This project includes GitHub Actions that automatically run checks when code is 
 
 - If you’re running locally, you can start with the default setup.
 - For hosting, connect it to a real database (like PostgreSQL) so data is stable long-term.
+
+## Members
+- TimGFM
+- TriBo
+- Chunkyboi
