@@ -64,3 +64,10 @@ This project includes GitHub Actions that automatically run checks when code is 
 - TimGFM
 - TriBo
 - Chunkyboi
+
+## How to fix lint-format
+```bash
+ruff check . --fix
+ruff format .
+pytest -q
+```
