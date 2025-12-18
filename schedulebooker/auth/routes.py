@@ -1,9 +1,12 @@
-from flask import render_template, request, redirect, url_for, session
+from flask import redirect, render_template, request, session, url_for
+
+from ..sqlite_db import execute_db, query_db
 from . import auth_bp
-from ..sqlite_db import query_db, execute_db
+
 
 def normalize_phone(phone: str) -> str:
     return "".join(ch for ch in (phone or "") if ch.isdigit())
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -32,6 +35,7 @@ def login():
         return redirect(url_for("appointments.list_appointments"))
 
     return render_template("auth/login.html", error=None)
+
 
 @auth_bp.route("/logout")
 def logout():

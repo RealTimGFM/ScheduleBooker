@@ -1,7 +1,6 @@
 # create_db.py
-from datetime import datetime
 from schedulebooker import create_app
-from schedulebooker.sqlite_db import get_db, execute_db
+from schedulebooker.sqlite_db import execute_db, get_db
 
 app = create_app()
 

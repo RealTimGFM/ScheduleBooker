@@ -1,9 +1,12 @@
 from flask import Flask
+
 from schedulebooker import create_app
+
 
 def test_create_app_returns_flask_app():
     app = create_app()
     assert isinstance(app, Flask)
+
 
 def test_blueprints_registered():
     app = create_app()

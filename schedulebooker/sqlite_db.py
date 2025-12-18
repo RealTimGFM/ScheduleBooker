@@ -2,7 +2,9 @@
 
 import os
 import sqlite3
+
 from flask import current_app, g
+
 
 def init_app(app):
     """Run this from create_app() to set up the DB path + teardown."""
@@ -11,10 +13,7 @@ def init_app(app):
     os.makedirs(app.instance_path, exist_ok=True)
 
     # Build full DB path inside instance/
-    db_path = os.path.join(
-        app.instance_path,
-        app.config.get("DATABASE", "appointments.db")
-    )
+    db_path = os.path.join(app.instance_path, app.config.get("DATABASE", "appointments.db"))
     app.config["DATABASE_PATH"] = db_path
 
     @app.teardown_appcontext
@@ -31,12 +30,15 @@ def get_db():
         g.db = sqlite3.connect(current_app.config["DATABASE_PATH"])
         g.db.row_factory = sqlite3.Row
     return g.db
+
+
 def query_db(query, args=(), one=False):
     """Run a SELECT query and return rows (or one row)."""
     cur = get_db().execute(query, args)
     rows = cur.fetchall()
     cur.close()
     return (rows[0] if rows else None) if one else rows
+
 
 def execute_db(query, args=()):
     """Run INSERT/UPDATE/DELETE and commit. Returns lastrowid."""

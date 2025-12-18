@@ -1,14 +1,19 @@
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, session, abort
+
+from flask import abort, redirect, render_template, request, session, url_for
+
+from ..sqlite_db import execute_db, query_db
 from . import appointments_bp
-from ..sqlite_db import query_db, execute_db
+
 
 def require_login():
     return session.get("user_id")
 
+
 def get_services():
     rows = query_db("SELECT id, name FROM services ORDER BY name")
     return [(r["id"], r["name"]) for r in rows]
+
 
 @appointments_bp.route("/")
 def list_appointments():
@@ -26,6 +31,7 @@ def list_appointments():
         (user_id,),
     )
     return render_template("appointments/list.html", appointments=appts, error=None)
+
 
 @appointments_bp.route("/new", methods=["GET", "POST"])
 def new_appointment():
@@ -60,7 +66,10 @@ def new_appointment():
         )
         return redirect(url_for("appointments.list_appointments"))
 
-    return render_template("appointments/form.html", appointment=None, services=services, error=None)
+    return render_template(
+        "appointments/form.html", appointment=None, services=services, error=None
+    )
+
 
 @appointments_bp.route("/<int:appointment_id>/edit", methods=["GET", "POST"])
 def edit_appointment(appointment_id):
