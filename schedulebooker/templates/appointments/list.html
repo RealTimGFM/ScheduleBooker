@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>My Appointments</h1>
+<a href="{{ url_for('appointments.new_appointment') }}">+ New</a>
+
+<ul>
+  {% for a in appointments %}
+    <li>
+      {{ a["start_time"] }} — {{ a["customer_name"] }} ({{ a["service_name"] or "No service" }})
+      <a href="{{ url_for('appointments.edit_appointment', appointment_id=a['id']) }}">Edit</a>
+    </li>
+  {% else %}
+    <li>No appointments yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

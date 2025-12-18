@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ "Edit" if appointment else "New" }} Appointment</h1>
+
+<form method="post">
+  <label>Name:
+    <input name="customer_name" required value="{{ appointment['customer_name'] if appointment else '' }}">
+  </label><br>
+
+  <label>Date:
+    <input type="date" name="date" required value="{{ date_val if appointment else '' }}">
+  </label><br>
+
+  <label>Time:
+    <input type="time" name="time" required value="{{ time_val if appointment else '' }}">
+  </label><br>
+
+  <label>Service:
+    <select name="service_id">
+      {% for id, name in services %}
+        <option value="{{ id }}" {% if appointment and appointment['service_id'] == id %}selected{% endif %}>
+          {{ name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label><br>
+
+  <label>Notes:
+    <textarea name="notes">{{ appointment['notes'] if appointment else '' }}</textarea>
+  </label><br>
+
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
