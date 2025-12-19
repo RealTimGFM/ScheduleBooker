@@ -20,15 +20,11 @@ with app.app_context():
         # in create_db.py seed section
         services = [
             # name, category, duration_min, price, price_is_from, price_label, is_popular, sort_order
-
             ("Coupe (Homme)", "Homme", 30, 15.0, 0, None, 1, 1),
             ("Teinture (Homme)", "Homme", 60, 35.0, 1, None, 0, 2),
-
             ("Coupe (Femme)", "Femme", 60, 18.0, 1, None, 1, 10),
             ("Coupe + Placer (Femme)", "Femme", 60, 25.0, 1, None, 0, 11),
             ("Laver + Placer (Femme)", "Femme", 60, 20.0, 0, None, 0, 12),
-
-
             ("Teinture (Femme)", "Femme", 120, 70.0, 0, None, 0, 13),
             ("Permanent", "Femme", 120, 60.0, 0, None, 0, 14),
             ("Highlight", "Femme", 150, 120.0, 1, None, 0, 15),

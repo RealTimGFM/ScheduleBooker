@@ -22,7 +22,7 @@ def app(tmp_path):
         # Seed at least 1 active service so /services returns something
         db.execute(
             """
-            INSERT INTO services
+            INSERT OR IGNORE INTO services
               (name, category, duration_min, price, price_is_from, price_label, is_active, is_popular, sort_order)
             VALUES
               (?, ?, ?, ?, ?, ?, ?, ?, ?)

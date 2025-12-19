@@ -14,10 +14,10 @@ def create_app():
 
     sqlite_db.init_app(app)
 
+    from .admin import admin_bp
     from .appointments import appointments_bp
     from .auth import auth_bp
     from .public import public_bp
-    from .admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(appointments_bp)

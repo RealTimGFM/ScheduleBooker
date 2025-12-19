@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 
-from flask import jsonify, redirect, render_template, request, url_for
+from flask import jsonify, render_template, request
 from jinja2 import TemplateNotFound
 
 from ..sqlite_db import query_db
 from . import public_bp
-
 
 SHOP_CAPACITY_PER_SLOT = 3  # safe default; can be changed later
 
@@ -51,11 +50,7 @@ def _load_services_split():
 
 
 def _load_active_barbers():
-    rows = query_db(
-        "SELECT id, name, is_active "
-        "FROM barbers WHERE is_active = 1 "
-        "ORDER BY name ASC"
-    )
+    rows = query_db("SELECT id, name, is_active FROM barbers WHERE is_active = 1 ORDER BY name ASC")
     return [dict(r) for r in rows]
 
 
@@ -82,7 +77,9 @@ def _load_bookings_for_day(day: date):
     return [dict(r) for r in rows]
 
 
-def _build_time_slots(day: date, duration_min: int, barbers: list[dict], selected_barber_id: int | None):
+def _build_time_slots(
+    day: date, duration_min: int, barbers: list[dict], selected_barber_id: int | None
+):
     # Monday closed (weekday: Mon=0)
     OPEN = time(11, 0)
     CLOSE = time(19, 0)
@@ -93,7 +90,9 @@ def _build_time_slots(day: date, duration_min: int, barbers: list[dict], selecte
         t = datetime.combine(day, OPEN)
         end = datetime.combine(day, CLOSE)
         while t < end:
-            slots.append({"time": t.strftime("%H:%M"), "is_available": False, "reason": "Closed (Monday)"})
+            slots.append(
+                {"time": t.strftime("%H:%M"), "is_available": False, "reason": "Closed (Monday)"}
+            )
             t += timedelta(minutes=30)
         return slots
 
@@ -131,7 +130,9 @@ def _build_time_slots(day: date, duration_min: int, barbers: list[dict], selecte
         )
 
     # effective shop cap cannot exceed number of active barbers
-    effective_shop_cap = min(SHOP_CAPACITY_PER_SLOT, len(active_barber_ids)) if active_barber_ids else 0
+    effective_shop_cap = (
+        min(SHOP_CAPACITY_PER_SLOT, len(active_barber_ids)) if active_barber_ids else 0
+    )
 
     slots = []
     cursor = datetime.combine(day, OPEN)
@@ -148,12 +149,20 @@ def _build_time_slots(day: date, duration_min: int, barbers: list[dict], selecte
                 shop_overlaps += 1
 
         if effective_shop_cap == 0:
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "No barbers"})
+            slots.append(
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": False,
+                    "reason": "No barbers",
+                }
+            )
             cursor += timedelta(minutes=30)
             continue
 
         if shop_overlaps >= effective_shop_cap:
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"})
+            slots.append(
+                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"}
+            )
             cursor += timedelta(minutes=30)
             continue
 
@@ -166,10 +175,22 @@ def _build_time_slots(day: date, duration_min: int, barbers: list[dict], selecte
 
         if selected_barber_id is not None:
             ok = barber_free(selected_barber_id)
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": ok, "reason": None if ok else "Booked"})
+            slots.append(
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": ok,
+                    "reason": None if ok else "Booked",
+                }
+            )
         else:
             ok_any = any(barber_free(bid) for bid in active_barber_ids)
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": ok_any, "reason": None if ok_any else "Booked"})
+            slots.append(
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": ok_any,
+                    "reason": None if ok_any else "Booked",
+                }
+            )
 
         cursor += timedelta(minutes=30)
 
