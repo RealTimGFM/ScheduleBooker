@@ -2,3 +2,4 @@
 *.venv
 dump_project.py
 dump.txt
+*cache*
