@@ -200,6 +200,7 @@ def _build_time_slots(
 
     return slots
 
+
 def _load_barber(barber_id: int):
     row = query_db(
         "SELECT id, name, is_active FROM barbers WHERE id = ? AND is_active = 1",
@@ -207,12 +208,17 @@ def _load_barber(barber_id: int):
         one=True,
     )
     return dict(row) if row else None
+
+
 def _normalize_phone(phone: str | None) -> str:
     return "".join(ch for ch in (phone or "") if ch.isdigit())
+
 
 def _normalize_email(email: str | None) -> str | None:
     e = (email or "").strip().lower()
     return e or None
+
+
 def _parse_time_hhmm(time_str: str | None) -> time | None:
     if not time_str:
         return None
@@ -221,6 +227,8 @@ def _parse_time_hhmm(time_str: str | None) -> time | None:
         return time(t.hour, t.minute)
     except ValueError:
         return None
+
+
 def _validate_public_booking(service: dict, barber: dict, day: date, start_t: time):
     duration_min = int(service.get("duration_min") or 30)
 
@@ -264,6 +272,8 @@ def _validate_public_booking(service: dict, barber: dict, day: date, start_t: ti
             return None, None, "That time is no longer available. Please choose another slot."
 
     return start_dt, end_dt, None
+
+
 def _count_bookings_for_contact(day: date, phone: str | None, email: str | None) -> int:
     day_start = datetime.combine(day, time(0, 0))
     day_end = day_start + timedelta(days=1)
@@ -294,6 +304,8 @@ def _count_bookings_for_contact(day: date, phone: str | None, email: str | None)
         one=True,
     )
     return int(row["cnt"]) if row else 0
+
+
 def _generate_booking_code() -> str:
     for _ in range(5):
         code = secrets.token_urlsafe(8).replace("-", "").replace("_", "")
@@ -305,6 +317,8 @@ def _generate_booking_code() -> str:
         if not exists:
             return code
     return secrets.token_urlsafe(12).replace("-", "").replace("_", "")
+
+
 def _normalize_contact(contact: str | None) -> tuple[str | None, str | None]:
     c = (contact or "").strip()
     if not c:
@@ -343,7 +357,6 @@ def _find_bookings_by_contact(phone: str | None, email: str | None) -> list[dict
         tuple(args),
     )
     return [dict(r) for r in rows]
-
 
 
 @public_bp.get("/services")
@@ -412,6 +425,8 @@ def book_schedule():
         time_slots=time_slots,
         error=None,
     )
+
+
 @public_bp.post("/book/confirm")
 def book_confirm():
     service_id = request.form.get("service_id", type=int)
@@ -422,7 +437,11 @@ def book_confirm():
     if not service_id or not barber_id or not date_str or not time_str:
         return render_or_json(
             "public/book_confirm.html",
-            service=None, barber=None, date=date_str, time=time_str, duration_min=None,
+            service=None,
+            barber=None,
+            date=date_str,
+            time=time_str,
+            duration_min=None,
             error="Missing required booking selection (service/barber/date/time).",
         )
 
@@ -432,7 +451,10 @@ def book_confirm():
     if not service or not barber:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
             duration_min=int(service.get("duration_min") or 30) if service else None,
             error="Invalid service or barber selection.",
         )
@@ -446,6 +468,8 @@ def book_confirm():
         duration_min=int(service.get("duration_min") or 30),
         error=None,
     )
+
+
 @public_bp.post("/book/finish")
 def book_finish():
     service_id = request.form.get("service_id", type=int)
@@ -465,14 +489,22 @@ def book_finish():
     if not service or not barber or not date_str or not time_str:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error="Missing or invalid booking selection.",
         )
 
     if not customer_name:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error="Customer name is required.",
         )
 
@@ -481,7 +513,11 @@ def book_finish():
     if not customer_phone and not customer_email:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error="Phone or email is required.",
         )
 
@@ -490,7 +526,11 @@ def book_finish():
     if not day or not start_t:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error="Invalid date or time format.",
         )
 
@@ -498,14 +538,22 @@ def book_finish():
     if err:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error=err,
         )
 
     if _count_bookings_for_contact(day, customer_phone, customer_email) >= 2:
         return render_or_json(
             "public/book_confirm.html",
-            service=service, barber=barber, date=date_str, time=time_str, duration_min=duration_min,
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
             error=MAX_BOOKINGS_PER_DAY_MESSAGE,
         )
 
@@ -536,6 +584,8 @@ def book_finish():
     )
 
     return redirect(f"/book/success?booking_id={booking_id}")
+
+
 @public_bp.get("/book/success")
 def book_success():
     booking_id = request.args.get("booking_id", type=int)
@@ -557,9 +607,13 @@ def book_success():
         return render_or_json("public/book_success.html", booking=None, error="Booking not found.")
 
     return render_or_json("public/book_success.html", booking=booking, error=None)
+
+
 @public_bp.get("/find-booking")
 def find_booking_page():
     return render_or_json("public/find_booking.html", contact="", error=None)
+
+
 @public_bp.post("/find-booking")
 def find_booking_results():
     contact = request.form.get("contact")
@@ -579,6 +633,8 @@ def find_booking_results():
         bookings=bookings,
         error=None,
     )
+
+
 @public_bp.post("/booking/<int:booking_id>/cancel")
 def cancel_booking(booking_id: int):
     contact = request.form.get("contact")
@@ -611,9 +667,8 @@ def cancel_booking(booking_id: int):
             error="Booking not found.",
         )
 
-    matches_contact = (
-        (phone and booking["customer_phone"] == phone)
-        or (email and (booking["customer_email"] or "").lower() == email)
+    matches_contact = (phone and booking["customer_phone"] == phone) or (
+        email and (booking["customer_email"] or "").lower() == email
     )
     matches_code = (booking["booking_code"] or "") == booking_code
 
@@ -639,4 +694,3 @@ def cancel_booking(booking_id: int):
         bookings=bookings,
         error=None,
     )
-
