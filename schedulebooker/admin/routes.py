@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
-from functools import wraps
 import secrets
+from datetime import date, datetime, time, timedelta
 
 from flask import jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import check_password_hash
 
-from ..sqlite_db import query_db
-from ..sqlite_db import execute_db
-
+from ..sqlite_db import execute_db, query_db
 from . import admin_bp
 
 

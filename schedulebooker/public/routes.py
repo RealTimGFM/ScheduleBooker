@@ -1,18 +1,13 @@
 from __future__ import annotations
 
+import secrets
 from datetime import date, datetime, time, timedelta
 
-from flask import jsonify, render_template, request
+from flask import jsonify, redirect, render_template, request, session
 from jinja2 import TemplateNotFound
 
-from ..sqlite_db import query_db
+from ..sqlite_db import execute_db, query_db
 from . import public_bp
-
-import secrets
-from flask import redirect, session
-from ..sqlite_db import execute_db
-
-
 
 SHOP_CAPACITY_PER_SLOT = 3  # safe default; can be changed later
 OPEN = time(11, 0)
