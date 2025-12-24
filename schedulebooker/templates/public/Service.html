@@ -15,7 +15,6 @@
 <body>
 
 <header>
-    <!-- Nav bar -->
     <nav class="navbar">
         <div class="navdiv">
 
@@ -27,11 +26,15 @@
                 <li><a href="about-us.html">About us</a></li>
                 <li><a href="contact.html">Contact</a></li>
             </ul>
+            
 
             <div class="nav-auth">
-                <button type="button">Sign in</button>
-                <button type="button">Log in</button>
+                <button type="button" onclick="window.location.href='../auth/sign-in.html'">Sign in</button>
+                <button type="button"onclick="window.location.href='../auth/login.html'">Log in</button>
             </div>
+
+            <!-- Dark mode switch (giống Home) -->
+            <button id="theme-toggle" type="button">🌙</button>
 
         </div>
     </nav>
@@ -39,9 +42,10 @@
 
 <main>
 
+    <!-- INTRO -->
     <div class="container">
         <div class="container-text">
-            <h2 class="title">OUR SERIVCE</h2>
+            <h2 class="title">OUR SERVICE</h2>
             <p class="intro-text">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
                 tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
@@ -49,63 +53,76 @@
                 commodo consequat.
             </p>
         </div>
-
     </div>
-    
+
     <hr>
 
+    <!-- SERVICE LIST -->
     <div class="container-team">
-       <h2 class="Service">Our Service</h2>
+        <h2 class="Service">Our Service</h2>
+
         <div class="team-grid">
-          
+
             <div class="card">
                 <div class="card-top">
                     <div class="avatar">Img</div>
                     <div>
-                        <h4>Name</h4>
-                        <p>Lorem ipsum dolor sit amet.</p>
+                        <h4>Haircut</h4>
+                        <p>Professional haircut tailored to your style.</p>
                     </div>
                 </div>
-                <button class="btn-book" type="button">Book</button>
+                <button class="btn-book" type="button"
+                        onclick="window.location.href='booking-service.html'">
+                    Book
+                </button>
             </div>
 
             <div class="card">
                 <div class="card-top">
                     <div class="avatar">Img</div>
                     <div>
-                        <h4>Name</h4>
-                        <p>Lorem ipsum dolor sit amet.</p>
+                        <h4>Beard Trim</h4>
+                        <p>Clean and sharp beard trimming service.</p>
                     </div>
                 </div>
-                <button class="btn-book" type="button">Book</button>
-                
-            </div>
-                     <div class="card">
-                <div class="card-top">
-                    <div class="avatar">Img</div>
-                    <div>
-                        <h4>Name</h4>
-                        <p>Lorem ipsum dolor sit amet.</p>
-                    </div>
-                </div>
-                <button class="btn-book" type="button">Book</button>
-            </div>
-                     <div class="card">
-                <div class="card-top">
-                    <div class="avatar">Img</div>
-                    <div>
-                        <h4>Name</h4>
-                        <p>Lorem ipsum dolor sit amet.</p>
-                    </div>
-                </div>
-                <button class="btn-book" type="button">Book</button>
+                <button class="btn-book" type="button"
+                        onclick="window.location.href='booking-service.html'">
+                    Book
+                </button>
             </div>
 
+            <div class="card">
+                <div class="card-top">
+                    <div class="avatar">Img</div>
+                    <div>
+                        <h4>Hair & Beard</h4>
+                        <p>Complete grooming for hair and beard.</p>
+                    </div>
+                </div>
+                <button class="btn-book" type="button"
+                        onclick="window.location.href='booking-service.html'">
+                    Book
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-top">
+                    <div class="avatar">Img</div>
+                    <div>
+                        <h4>Kids Cut</h4>
+                        <p>Comfortable haircut service for kids.</p>
+                    </div>
+                </div>
+                <button class="btn-book" type="button"
+                        onclick="window.location.href='booking-service.html'">
+                    Book
+                </button>
+            </div>
 
         </div>
     </div>
 
-
+    <!-- SUBSCRIBE -->
     <div class="subscribe">
         <h3>Subscribe and Get Exclusive Promotions</h3>
         <form class="subscribe-form">
@@ -138,6 +155,23 @@
 
     </div>
 </footer>
+
+<script>
+const toggle = document.getElementById("theme-toggle");
+
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme) {
+    document.body.setAttribute("data-theme", savedTheme);
+    toggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+}
+
+toggle.addEventListener("click", () => {
+    const isDark = document.body.getAttribute("data-theme") === "dark";
+    document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+    localStorage.setItem("theme", isDark ? "light" : "dark");
+    toggle.textContent = isDark ? "🌙" : "☀️";
+});
+</script>
 
 </body>
 </html>
