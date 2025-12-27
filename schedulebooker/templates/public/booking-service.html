@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/booking.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+
+    <title>Booking</title>
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar">
+            <div class="navdiv">
+
+                <img src="../../static/img/Logo.png" class="logo" alt="Logo" />
+
+                <ul class="nav-menu">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="Service.html">Service</a></li>
+                    <li><a href="about-us.html">About us</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+
+                <div class="nav-auth">
+                    <button type="button" onclick="window.location.href='../auth/sign-in.html'">Sign in</button>
+                    <button type="button" onclick="window.location.href='../auth/login.html'">Log in</button>
+                </div>
+
+                <!-- Dark mode switch -->
+                <button id="theme-toggle" type="button">🌙</button>
+
+            </div>
+        </nav>
+    </header>
+
+
+    <main>
+
+        <!-- SERVICE INTRO -->
+        <div class="container service-intro">
+            <h2 class="title">Service Name</h2>
+            <p class="intro-text">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                dolore magna aliqua.
+            </p>
+        </div>
+
+        <!-- MOST POPULAR -->
+        <div class="booking-section">
+            <h3 class="section-title">Most Popular</h3>
+
+            <div class="booking-grid">
+                <div class="booking-card">
+                    <p>Haircut</p>
+                    <span>$30</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Beard Trim</p>
+                    <span>$20</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Hair + Beard</p>
+                    <span>$45</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Fade Cut</p>
+                    <span>$35</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTHER SERVICE -->
+        <div class="booking-section">
+            <h3 class="section-title">Other Service</h3>
+
+            <div class="booking-grid">
+                <div class="booking-card">
+                    <p>Kids Haircut</p>
+                    <span>$25</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Line Up</p>
+                    <span>$15</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Hot Towel</p>
+                    <span>$10</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+
+                <div class="booking-card">
+                    <p>Scalp Care</p>
+                    <span>$20</span>
+                    <button class="btn-book" onclick="window.location.href='./Booking/appointment.html'">Book</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GALLERY -->
+        <div class="gallery-section">
+            <h3 class="section-title">Gallery</h3>
+
+            <div class="gallery-container">
+                <button class="gallery-arrow left">&#10094;</button>
+
+                <div class="gallery-wrapper">
+                    <div class="gallery-track">
+                        <div class="gallery-item" data-img="img/cut1.jpg"></div>
+                        <div class="gallery-item" data-img="img/cut2.jpg"></div>
+                        <div class="gallery-item" data-img="img/cut3.jpg"></div>
+                        <div class="gallery-item" data-img="img/cut4.jpg"></div>
+                        <div class="gallery-item" data-img="img/cut5.jpg"></div>
+                    </div>
+                </div>
+
+                <button class="gallery-arrow right">&#10095;</button>
+            </div>
+        </div>
+
+        <!-- LIGHTBOX -->
+        <div class="lightbox" id="lightbox">
+            <span class="lightbox-close">&times;</span>
+            <img class="lightbox-img" />
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+
+            <div class="footer-left">
+                <img src="../../static/img/Logo.png" class="logo" alt="Logo" />
+                <p class="footer-copy">Copyright</p>
+            </div>
+
+            <div class="footer-center">
+                <h4>Our Store</h4>
+                <p>Location</p>
+                <p>Open Hour</p>
+                <p>Telephone</p>
+            </div>
+
+            <div class="footer-right">
+                <h4>Policy</h4>
+            </div>
+
+        </div>
+    </footer>
+
+    <script>
+        const toggle = document.getElementById("theme-toggle");
+
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme) {
+            document.body.setAttribute("data-theme", savedTheme);
+            toggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+        }
+
+        toggle.addEventListener("click", () => {
+            const isDark = document.body.getAttribute("data-theme") === "dark";
+            document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+            localStorage.setItem("theme", isDark ? "light" : "dark");
+            toggle.textContent = isDark ? "🌙" : "☀️";
+        });
+
+        /* ARROW SCROLL */
+        const galleryWrapper = document.querySelector('.gallery-wrapper');
+        document.querySelector('.gallery-arrow.left').onclick = () => {
+            galleryWrapper.scrollBy({ left: -300, behavior: 'smooth' });
+        };
+        document.querySelector('.gallery-arrow.right').onclick = () => {
+            galleryWrapper.scrollBy({ left: 300, behavior: 'smooth' });
+        };
+
+        /* LIGHTBOX */
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.querySelector('.lightbox-img');
+        const closeBtn = document.querySelector('.lightbox-close');
+
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const img = item.getAttribute('data-img');
+                lightboxImg.src = img;
+                lightbox.classList.add('show');
+            });
+        });
+
+        closeBtn.onclick = () => {
+            lightbox.classList.remove('show');
+        };
+
+        lightbox.onclick = (e) => {
+            if (e.target === lightbox) {
+                lightbox.classList.remove('show');
+            }
+        };
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,469 @@
+:root {
+    --red-main: #d32f2f;
+    --red-dark: #8b0000;
+    --black-main: #0b0b0b;
+    --white-soft: #f6f6f6;
+    --gold-warm: #c9a24d;
+
+    --bg-body: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
+    --bg-main: #f1f1f1;
+    --bg-card: #ffffff;
+    --text-main: #0b0b0b;
+}
+
+body[data-theme="dark"] {
+    --bg-body: #121212;
+    --bg-main: #181818;
+    --bg-card: #1f1f1f;
+    --text-main: #f5f5f5;
+}
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* BODY */
+body {
+    background: var(--bg-body);
+    color: var(--text-main);
+    line-height: 1.75;
+}
+
+/* MAIN */
+main {
+    background: var(--bg-main);
+    padding: 100px 0;
+}
+
+/* NAVBAR */
+.navbar {
+    background: linear-gradient(
+        to right,
+        var(--red-main),
+        var(--red-dark),
+        var(--black-main)
+    );
+}
+
+.navdiv {
+    max-width: 1200px;
+    margin: auto;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    height: 48px;
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 32px;
+}
+
+.nav-menu li a {
+    text-decoration: none;
+    color: var(--white-soft);
+    font-weight: 500;
+}
+
+.nav-auth button {
+    background: transparent;
+    border: 1px solid var(--gold-warm);
+    color: var(--gold-warm);
+    padding: 6px 16px;
+    cursor: pointer;
+}
+
+/* HERO / INTRO */
+.container {
+    max-width: 1000px;
+    margin: 0 auto 120px;
+    padding: 70px 32px;
+    background: var(--bg-card);
+    border-radius: 18px;
+    box-shadow:
+        0 6px 14px rgba(0,0,0,0.05),
+        0 22px 50px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.container .title {
+    color: var(--red-dark);
+    font-size: 26px;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+.intro-text {
+    max-width: 760px;
+    margin: auto;
+    font-size: 15px;
+    color: var(--text-main);
+}
+
+/* SECTION TITLE */
+.Service {
+    text-align: center;
+    color: var(--red-dark);
+    font-size: 24px;
+    margin-bottom: 48px;
+}
+
+/* SERVICE GRID */
+.container-team {
+    max-width: 1200px;
+    margin: 0 auto 120px;
+    padding: 0 24px;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 48px;
+}
+
+/* CARD */
+.card {
+    background: var(--bg-card);
+    border-left: 4px solid var(--red-main);
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow:
+        0 4px 10px rgba(0,0,0,0.05),
+        0 18px 40px rgba(0,0,0,0.1);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow:
+        0 10px 22px rgba(0,0,0,0.12),
+        0 30px 60px rgba(0,0,0,0.18);
+}
+
+.card h4 {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.card p {
+    color: var(--text-main);
+}
+
+/* CARD TOP */
+.card-top {
+    display: flex;
+    gap: 18px;
+}
+
+/* AVATAR */
+.avatar {
+    width: 80px;
+    height: 80px;
+    background: var(--white-soft);
+    border: 1px solid var(--gold-warm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+/* BOOK BUTTON */
+.btn-book {
+    margin-top: 24px;
+    padding: 10px 30px;
+    background: var(--black-main);
+    color: var(--gold-warm);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* SUBSCRIBE */
+.subscribe {
+    max-width: 1200px;
+    margin: 0 auto 120px;
+    padding: 70px 24px;
+    background: linear-gradient(
+        135deg,
+        var(--red-main),
+        var(--red-dark)
+    );
+    color: #fff;
+    border-radius: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.subscribe h3 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* SUBSCRIBE FORM */
+.subscribe-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+}
+
+.subscribe-form label {
+    font-weight: 500;
+}
+
+.subscribe-form input {
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    min-width: 240px;
+    font-size: 14px;
+    color: #111;
+
+    box-shadow:
+        inset 0 2px 4px rgba(0,0,0,0.15),
+        0 6px 16px rgba(0,0,0,0.25);
+}
+
+.subscribe-form button {
+    background: var(--gold-warm);
+    color: var(--black-main);
+    border: none;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+
+    box-shadow:
+        0 6px 16px rgba(0,0,0,0.25),
+        0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* FOOTER */
+.footer {
+    background: var(--black-main);
+    color: #fff;
+    padding: 50px 24px;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+}
+
+.footer h4 {
+    color: var(--gold-warm);
+    margin-bottom: 12px;
+}
+
+.footer-copy {
+    font-size: 14px;
+    color: #aaa;
+}
+
+/* HR */
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    max-width: 1200px;
+    margin: 80px auto;
+}
+
+#theme-toggle {
+    background: transparent;
+    border: 1px solid var(--gold-warm);
+    color: var(--gold-warm);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+/* SERVICE INTRO */
+.service-intro {
+    text-align: center;
+}
+
+/* SECTION */
+.booking-section {
+    max-width: 1200px;
+    margin: 100px auto;
+    padding: 0 24px;
+}
+
+/* Section title center */
+.section-title {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.booking-card {
+    display: grid;
+    grid-template-columns: 260px 1fr 160px;
+    align-items: center;
+
+    padding: 22px 0;
+    border-bottom: 1px solid #666;
+}
+
+/* LEFT COLUMN – SERVICE NAME */
+.booking-card p {
+    text-align: left;
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* MIDDLE COLUMN – PRICE */
+.booking-card span {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+    transition: color 0.2s ease;
+}
+
+/* RIGHT COLUMN – BOOK BUTTON */
+.booking-card .btn-book {
+    background: #ddd;
+    color: #000;
+    padding: 8px 26px;
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.booking-card .btn-book:hover {
+    background-color: var(--red-main) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 3px rgba(211,47,47,0.3);
+}
+/* Dark mode adjustment */
+body[data-theme="dark"] .booking-card {
+    border-bottom: 1px solid #555;
+}
+
+body[data-theme="dark"] .booking-card .btn-book {
+    background: #ccc;
+    color: #000;
+}
+
+/* GALLERY */
+.gallery-section {
+    max-width: 1200px;
+    margin: 120px auto;
+    padding: 0 24px;
+}
+
+.gallery-wrapper {
+    overflow-x: auto;
+    scrollbar-width: none;        
+    -ms-overflow-style: none;    
+}
+
+.gallery-wrapper::-webkit-scrollbar {
+    display: none;              
+}
+
+.gallery-track {
+    display: flex;
+    gap: 24px;
+}
+
+.gallery-item {
+    min-width: 260px;
+    height: 180px;
+    background: #888;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+/* GALLERY CONTAINER */
+.gallery-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* ARROWS */
+.gallery-arrow {
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    font-size: 28px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 5;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.gallery-arrow:hover {
+    background: var(--red-main);
+    transform: scale(1.05);
+}
+
+.gallery-arrow.left {
+    margin-right: 10px;
+}
+
+.gallery-arrow.right {
+    margin-left: 10px;
+}
+
+/* GALLERY ITEM CLICKABLE */
+.gallery-item {
+    cursor: pointer;
+}
+
+/* LIGHTBOX */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.lightbox.show {
+    display: flex;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    font-size: 36px;
+    color: #fff;
+    cursor: pointer;
+}
