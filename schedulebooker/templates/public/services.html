@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Services</h1>
+
+<p class="subtle">Pick a service to book. Guest booking is allowed.</p>
+
+{% if most_popular_services %}
+<h2>Most popular</h2>
+<div class="card">
+  <ul class="list">
+    {% for s in most_popular_services %}
+    <li class="row row-between">
+      <div>
+        <div class="title">{{ s.name }}</div>
+        <div class="subtle">
+          {% if s.duration_min %}{{ s.duration_min }} min{% endif %}
+          {% if s.price is not none %} · ${{ s.price }}{% endif %}
+        </div>
+      </div>
+      <a class="btn" href="/book?service_id={{ s.id }}">Book</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if other_services %}
+<h2 style="margin-top:18px">Other services</h2>
+<div class="card">
+  <ul class="list">
+    {% for s in other_services %}
+    <li class="row row-between">
+      <div>
+        <div class="title">{{ s.name }}</div>
+        <div class="subtle">
+          {% if s.duration_min %}{{ s.duration_min }} min{% endif %}
+          {% if s.price is not none %} · ${{ s.price }}{% endif %}
+        </div>
+      </div>
+      <a class="btn" href="/book?service_id={{ s.id }}">Book</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not most_popular_services and not other_services %}
+<div class="alert">No services available yet.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Confirm booking</h1>
+
+<div class="card">
+  <div class="title">{{ service.name }}</div>
+  <div class="subtle">
+    Barber: {{ barber.name }} · {{ date }} at {{ time }}
+    {% if duration_min %} · {{ duration_min }} min{% endif %}
+  </div>
+</div>
+
+<form class="card form" method="post" action="/book/finish" style="margin-top:18px">
+  <!-- hidden fields (must match the contract exactly) -->
+  <input type="hidden" name="service_id" value="{{ service.id }}">
+  <input type="hidden" name="barber_id" value="{{ barber.id }}">
+  <input type="hidden" name="date" value="{{ date }}">
+  <input type="hidden" name="time" value="{{ time }}">
+
+  <h2>Customer info</h2>
+
+  <div class="grid-2">
+    <label class="field">
+      <span>Name</span>
+      <input name="customer_name" required>
+    </label>
+
+    <label class="field">
+      <span>Phone</span>
+      <input name="customer_phone" required>
+    </label>
+  </div>
+
+  <label class="field" style="margin-top:12px">
+    <span>Email (optional)</span>
+    <input type="email" name="customer_email">
+  </label>
+
+  <label class="field" style="margin-top:12px">
+    <span>Notes (optional)</span>
+    <textarea name="notes" rows="4" placeholder="Anything the barber should know?"></textarea>
+  </label>
+
+  <div class="row" style="margin-top:12px">
+    <button class="btn" type="submit">Finish booking</button>
+    <a class="btn btn-ghost" href="/book?service_id={{ service.id }}&date={{ date }}&barber_id={{ barber.id }}">Back</a>
+  </div>
+</form>
+{% endblock %}

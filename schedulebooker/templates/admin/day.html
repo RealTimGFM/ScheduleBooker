@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Admin day view</h1>
+
+<form class="card form" method="get" action="/admin/day">
+  <label class="field">
+    <span>Date</span>
+    <input type="date" name="date" value="{{ date }}">
+  </label>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" type="submit">Go</button>
+  </div>
+</form>
+
+<h2 style="margin-top:18px">Bookings</h2>
+{% if bookings %}
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Start</th>
+          <th>Customer</th>
+          <th>Service</th>
+          <th>Barber</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+          <tr>
+            <td>{{ b.start_time }}</td>
+            <td>{{ b.customer_name }}</td>
+            <td>{% if b.service_id is not none %}{{ b.service_id }}{% endif %}</td>
+            <td>{% if b.barber_id is not none %}{{ b.barber_id }}{% endif %}</td>
+            <td>{{ b.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert">No bookings for this date.</div>
+{% endif %}
+
+<h2 style="margin-top:18px">Create booking (no validations)</h2>
+<form class="card form" method="post" action="/admin/book">
+  <div class="grid-2">
+    <label class="field">
+      <span>Customer name</span>
+      <input name="customer_name" required>
+    </label>
+
+    <label class="field">
+      <span>Service ID</span>
+      <input type="number" name="service_id" required>
+    </label>
+  </div>
+
+  <div class="grid-2" style="margin-top:12px">
+    <label class="field">
+      <span>Date</span>
+      <input type="date" name="date" value="{{ date }}" required>
+    </label>
+
+    <label class="field">
+      <span>Time</span>
+      <input type="time" name="time" step="1800" required>
+    </label>
+  </div>
+
+  <div class="grid-2" style="margin-top:12px">
+    <label class="field">
+      <span>Barber ID (optional)</span>
+      <input type="number" name="barber_id">
+    </label>
+
+    <label class="field">
+      <span>Phone (optional)</span>
+      <input name="customer_phone">
+    </label>
+  </div>
+
+  <label class="field" style="margin-top:12px">
+    <span>Email (optional)</span>
+    <input type="email" name="customer_email">
+  </label>
+
+  <div class="row" style="margin-top:12px">
+    <button class="btn" type="submit">Create</button>
+  </div>
+
+  <p class="subtle" style="margin-top:8px">
+    Note: This form follows the contract: admin can create bookings even if they overlap or break rules.
+  </p>
+</form>
+{% endblock %}

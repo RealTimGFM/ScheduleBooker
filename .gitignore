@@ -3,3 +3,4 @@
 dump_project.py
 dump.txt
 *cache*
+*.pyc

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Bookings</h1>
+
+<p class="subtle">Results for: <strong>{{ contact }}</strong></p>
+
+{% if bookings %}
+  <div class="card">
+    <ul class="list">
+      {% for b in bookings %}
+        <li class="row row-between">
+          <div>
+            <div class="title">
+              {% if b.start_time %}{{ b.start_time }}{% else %}Booking #{{ b.id }}{% endif %}
+            </div>
+            <div class="subtle">
+              {% if b.customer_name %}{{ b.customer_name }}{% endif %}
+              {% if b.status %} · {{ b.status }}{% endif %}
+            </div>
+          </div>
+
+          <form method="post" action="/booking/{{ b.id }}/cancel" class="inline-form">
+            <input type="hidden" name="contact" value="{{ contact }}">
+            <label class="mini-field">
+              <span class="sr-only">Booking code</span>
+              <input name="booking_code" placeholder="Booking code" required>
+            </label>
+            <button class="btn btn-danger" type="submit">Cancel</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% else %}
+  <div class="alert">No bookings found for that contact.</div>
+{% endif %}
+
+<div class="row" style="margin-top:12px">
+  <a class="btn btn-ghost" href="/find-booking">New search</a>
+  <a class="btn btn-ghost" href="/services">Back to services</a>
+</div>
+{% endblock %}

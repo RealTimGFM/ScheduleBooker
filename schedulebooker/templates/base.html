@@ -2,19 +2,35 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ScheduleBooker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-  <nav>
-    <a href="{{ url_for('appointments.list_appointments') }}">Appointments</a>
-    {% if session.get('user_id') %}
-      <a href="{{ url_for('auth.logout') }}">Logout</a>
-    {% else %}
-      <a href="{{ url_for('auth.login') }}">Login</a>
-    {% endif %}
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/services">Sonthien Barbershop</a>
+
+      <div class="nav-links">
+        <a href="/services">Services</a>
+        <a href="/find-booking">Find / Cancel</a>
+        <a href="/admin/login">Admin</a>
+
+        <span class="nav-sep"></span>
+
+        <a href="{{ url_for('appointments.list_appointments') }}">Appointments</a>
+        {% if session.get('user_id') %}
+          <a href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Login</a>
+        {% endif %}
+      </div>
+    </div>
   </nav>
 
-  {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
-  {% block content %}{% endblock %}
+  <main class="container">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
 </body>
 </html>

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Booking confirmed</h1>
+
+<div class="card">
+  <div class="title">Your booking is saved.</div>
+
+  <div class="kv" style="margin-top:12px">
+    {% if booking.customer_name %}
+      <div><strong>Name</strong></div><div>{{ booking.customer_name }}</div>
+    {% endif %}
+
+    {% if booking.start_time %}
+      <div><strong>Start</strong></div><div>{{ booking.start_time }}</div>
+    {% endif %}
+
+    {% if booking.end_time %}
+      <div><strong>End</strong></div><div>{{ booking.end_time }}</div>
+    {% endif %}
+
+    {% if booking.status %}
+      <div><strong>Status</strong></div><div>{{ booking.status }}</div>
+    {% endif %}
+  </div>
+
+  <div class="alert" style="margin-top:12px">
+    <strong>Booking code:</strong>
+    <span class="code">{{ booking.booking_code }}</span>
+    <div class="subtle">Keep this code safe. You need it to cancel/edit your booking.</div>
+  </div>
+
+  <div class="row" style="margin-top:12px">
+    <a class="btn" href="/find-booking">Find / Cancel a booking</a>
+    <a class="btn btn-ghost" href="/services">Book another service</a>
+  </div>
+</div>
+{% endblock %}

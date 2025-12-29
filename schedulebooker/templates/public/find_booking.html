@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Find your booking</h1>
+
+<p class="subtle">Enter the phone number or email you used when booking.</p>
+
+<form class="card form" method="post" action="/find-booking">
+  <label class="field">
+    <span>Phone or email</span>
+    <input name="contact" required>
+  </label>
+
+  <div class="row" style="margin-top:12px">
+    <button class="btn" type="submit">Search</button>
+    <a class="btn btn-ghost" href="/services">Back to services</a>
+  </div>
+</form>
+{% endblock %}
