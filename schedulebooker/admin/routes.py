@@ -74,7 +74,7 @@ def home():
 @admin_bp.get("/logout")
 def logout():
     session.pop("admin_user_id", None)
-    return redirect(url_for("public.index"))
+    return redirect(url_for("public.services"))
 
 
 @admin_bp.get("/login")

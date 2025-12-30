@@ -694,9 +694,12 @@ def cancel_booking(booking_id: int):
         bookings=bookings,
         error=None,
     )
+
+
 @public_bp.get("/about")
 def about_page():
     return redirect("/services#about")
+
 
 @public_bp.get("/contact")
 def contact_page():
