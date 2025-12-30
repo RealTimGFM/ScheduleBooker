@@ -1,42 +1,63 @@
 {% extends "base.html" %}
+{% block title %}Booking results · ScheduleBooker{% endblock %}
+
 {% block content %}
-<h1>Bookings</h1>
+  <section class="container">
+    <h1 class="title">Booking results</h1>
+    <p class="intro-text">Showing bookings for: <strong>{{ contact }}</strong></p>
+  </section>
 
-<p class="subtle">Results for: <strong>{{ contact }}</strong></p>
+  <div class="table-wrap">
+    <div class="table-card">
+      <h3>Your bookings</h3>
 
-{% if bookings %}
-  <div class="card">
-    <ul class="list">
-      {% for b in bookings %}
-        <li class="row row-between">
-          <div>
-            <div class="title">
-              {% if b.start_time %}{{ b.start_time }}{% else %}Booking #{{ b.id }}{% endif %}
-            </div>
-            <div class="subtle">
-              {% if b.customer_name %}{{ b.customer_name }}{% endif %}
-              {% if b.status %} · {{ b.status }}{% endif %}
-            </div>
-          </div>
+      {% if bookings and bookings|length > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Service</th>
+              <th>Barber</th>
+              <th>Status</th>
+              <th style="width: 220px;">Cancel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+              <tr>
+                <td>{{ (b.start_time or "")|replace("T", " ") }}</td>
+                <td>{{ b.service_name or "—" }}</td>
+                <td>{{ b.barber_name or "—" }}</td>
+                <td>
+                  {% if b.status == "booked" %}
+                    <span class="pill ok">booked</span>
+                  {% else %}
+                    <span class="pill bad">{{ b.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" action="{{ url_for('public.cancel_booking', booking_id=b.id) }}">
+                    <input type="hidden" name="contact" value="{{ contact }}">
+                    <input type="text" name="booking_code" value="{{ b.booking_code or '' }}" placeholder="Booking code" style="width: 140px; padding: 8px; border-radius: 10px; border: 1px solid var(--border-soft); background: var(--bg-input); color: var(--text-main);" required>
+                    <button type="submit" class="nav-link" style="margin-left: 8px;" {% if b.status != "booked" %}disabled{% endif %}>
+                      Cancel
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
 
-          <form method="post" action="/booking/{{ b.id }}/cancel" class="inline-form">
-            <input type="hidden" name="contact" value="{{ contact }}">
-            <label class="mini-field">
-              <span class="sr-only">Booking code</span>
-              <input name="booking_code" placeholder="Booking code" required>
-            </label>
-            <button class="btn btn-danger" type="submit">Cancel</button>
-          </form>
-        </li>
-      {% endfor %}
-    </ul>
+        <p class="small" style="margin-top: 12px;">
+          Cancellation requires the correct booking code.
+        </p>
+      {% else %}
+        <p>No bookings found.</p>
+        <div style="margin-top: 14px;">
+          <a class="nav-link" href="{{ url_for('public.find_booking_page') }}">Try another search</a>
+        </div>
+      {% endif %}
+    </div>
   </div>
-{% else %}
-  <div class="alert">No bookings found for that contact.</div>
-{% endif %}
-
-<div class="row" style="margin-top:12px">
-  <a class="btn btn-ghost" href="/find-booking">New search</a>
-  <a class="btn btn-ghost" href="/services">Back to services</a>
-</div>
 {% endblock %}

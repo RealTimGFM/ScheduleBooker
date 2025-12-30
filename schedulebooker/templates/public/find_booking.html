@@ -1,18 +1,24 @@
 {% extends "base.html" %}
+{% block title %}Find booking · ScheduleBooker{% endblock %}
+
 {% block content %}
-<h1>Find your booking</h1>
+  <div class="form-wrapper">
+    <div class="form-card">
+      <h2 class="form-title">Find your booking</h2>
+      <p class="form-desc">Enter the phone number or email you used for the booking.</p>
 
-<p class="subtle">Enter the phone number or email you used when booking.</p>
+      <form class="booking-form" method="post" action="{{ url_for('public.find_booking_results') }}">
+        <div class="form-group">
+          <label for="contact">Phone or email</label>
+          <input id="contact" name="contact" type="text" value="{{ contact or '' }}" placeholder="Phone or email" required>
+        </div>
 
-<form class="card form" method="post" action="/find-booking">
-  <label class="field">
-    <span>Phone or email</span>
-    <input name="contact" required>
-  </label>
+        <button class="primary-btn" type="submit">Search</button>
+      </form>
 
-  <div class="row" style="margin-top:12px">
-    <button class="btn" type="submit">Search</button>
-    <a class="btn btn-ghost" href="/services">Back to services</a>
+      <p class="auth-note">
+        If you have multiple bookings, they will all appear in the results.
+      </p>
+    </div>
   </div>
-</form>
 {% endblock %}

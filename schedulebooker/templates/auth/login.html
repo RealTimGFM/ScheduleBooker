@@ -1,9 +1,31 @@
 {% extends "base.html" %}
+{% block title %}Login · ScheduleBooker{% endblock %}
+
 {% block content %}
-<h1>Login</h1>
-<form method="post">
-  <label>Phone: <input name="phone" required></label><br>
-  <label>Name: <input name="name"></label><br>
-  <button type="submit">Continue</button>
-</form>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h2>Login</h2>
+      <p class="auth-subtitle">Enter your name and phone number.</p>
+
+      <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+        <div class="form-group" style="text-align:left;">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" placeholder="Your name" required>
+        </div>
+
+        <div class="form-group" style="text-align:left;">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="tel" placeholder="Digits only" required>
+        </div>
+
+        <button class="auth-btn" type="submit">Continue</button>
+      </form>
+
+      <p class="auth-note">
+        If your phone number is new, an account is created automatically.
+      </p>
+
+      <p class="auth-note">New here? <a href="{{ url_for('auth.signup') }}">Sign up</a></p>
+    </div>
+  </div>
 {% endblock %}

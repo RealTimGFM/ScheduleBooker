@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Contact · ScheduleBooker{% endblock %}
+
+{% block content %}
+<section class="container page">
+  <h1 class="title">Contact</h1>
+  <p class="subtitle">This page is static content. Replace placeholders with your real contact details.</p>
+
+  <div class="grid" style="margin-top:18px">
+    <div class="card">
+      <h2 style="margin-top:0">Contact details</h2>
+      <ul class="list">
+        <li><strong>Phone:</strong> (000) 000-0000</li>
+        <li><strong>Email:</strong> contact@example.com</li>
+        <li><strong>Address:</strong> 123 Main St, Montréal, QC</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Quick links</h2>
+      <p><a href="/services">Services</a></p>
+      <p><a href="/find-booking">Find / Cancel booking</a></p>
+      <p><a href="/admin/login">Admin</a></p>
+    </div>
+  </div>
+
+  <div style="margin-top:18px">
+    <a class="btn" href="/services">Back to Services</a>
+  </div>
+</section>
+{% endblock %}

@@ -107,6 +107,21 @@ Minimum fields needed:
 
 ---
 
+
+### A2) About Us (static page)
+- **GET** `/about`
+- **Template:** `schedulebooker/templates/public/about.html`
+- **Context:** none (static content)
+
+---
+
+### A3) Contact (static page)
+- **GET** `/contact`
+- **Template:** `schedulebooker/templates/public/contact.html`
+- **Context:** none (static content)
+
+---
+
 ### B) Schedule page (pick barber + date + time)
 - **GET** `/book`
 - **Query params:**

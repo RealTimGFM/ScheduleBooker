@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Appointment · ScheduleBooker{% endblock %}
+
+{% block content %}
+  <section class="container">
+    <h1 class="title">Appointment</h1>
+    <p class="intro-text">This page is currently not used by the demo routes.</p>
+    <div style="margin-top: 18px;">
+      <a class="nav-link" href="{{ url_for('appointments.list_appointments') }}">Back</a>
+    </div>
+  </section>
+{% endblock %}

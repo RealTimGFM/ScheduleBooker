@@ -1,50 +1,120 @@
 {% extends "base.html" %}
+{% block title %}Services · ScheduleBooker{% endblock %}
+
+{% macro price_text(s) -%}
+  {%- if s.price_label -%}
+    {{ s.price_label }}
+  {%- else -%}
+    ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
 {% block content %}
-<h1>Services</h1>
+  <section class="container" id="top">
+    <h1 class="title">Book your next appointment</h1>
+    <p class="intro-text">
+      Pick a service, choose a time slot, and get a booking code instantly.
+    </p>
+  </section>
 
-<p class="subtle">Pick a service to book. Guest booking is allowed.</p>
+  <section class="card-grid section" id="services">
+    <h2 class="section-title">Most Popular Services</h2>
 
-{% if most_popular_services %}
-<h2>Most popular</h2>
-<div class="card">
-  <ul class="list">
-    {% for s in most_popular_services %}
-    <li class="row row-between">
-      <div>
-        <div class="title">{{ s.name }}</div>
-        <div class="subtle">
-          {% if s.duration_min %}{{ s.duration_min }} min{% endif %}
-          {% if s.price is not none %} · ${{ s.price }}{% endif %}
+    <div class="team-grid">
+      {% for svc in most_popular_services %}
+        <div class="card">
+          <div class="card-top">
+            <div class="avatar">POPULAR</div>
+            <div>
+              <h4>{{ svc.name }}</h4>
+              <p class="small">{{ svc.category }} · {{ svc.duration_min }} min</p>
+              <p><strong>{{ price_text(svc) }}</strong></p>
+            </div>
+          </div>
+
+          <form method="get" action="/book">
+            <input type="hidden" name="service_id" value="{{ svc.id }}">
+            <button class="btn-book" type="submit">Book</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="card">
+          <p>No popular services yet.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card-grid section">
+    <h2 class="section-title">Other Services</h2>
+
+    <div class="team-grid">
+      {% for svc in other_services %}
+        <div class="card">
+          <div class="card-top">
+            <div class="avatar">SERVICE</div>
+            <div>
+              <h4>{{ svc.name }}</h4>
+              <p class="small">{{ svc.category }} · {{ svc.duration_min }} min</p>
+              <p><strong>{{ price_text(svc) }}</strong></p>
+            </div>
+          </div>
+
+          <form method="get" action="/book">
+            <input type="hidden" name="service_id" value="{{ svc.id }}">
+            <button class="btn-book" type="submit">Book</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="card">
+          <p>No other services yet.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="container" id="about">
+    <h2 class="title">About Us</h2>
+    <p class="intro-text">
+      This is a simple, fast booking flow built for a small shop. The goal is to make booking easy for customers,
+      while keeping the admin side clean and quick.
+    </p>
+  </section>
+
+  <section class="card-grid section" id="contact">
+    <h2 class="section-title">Contact</h2>
+
+    <div class="team-grid">
+      <div class="card">
+        <div class="card-top">
+          <div class="avatar">PHONE</div>
+          <div>
+            <h4>Phone</h4>
+            <p class="small">Update this in <code>templates/public/services.html</code></p>
+            <p><strong>TBD</strong></p>
+          </div>
         </div>
       </div>
-      <a class="btn" href="/book?service_id={{ s.id }}">Book</a>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
 
-{% if other_services %}
-<h2 style="margin-top:18px">Other services</h2>
-<div class="card">
-  <ul class="list">
-    {% for s in other_services %}
-    <li class="row row-between">
-      <div>
-        <div class="title">{{ s.name }}</div>
-        <div class="subtle">
-          {% if s.duration_min %}{{ s.duration_min }} min{% endif %}
-          {% if s.price is not none %} · ${{ s.price }}{% endif %}
+      <div class="card">
+        <div class="card-top">
+          <div class="avatar">EMAIL</div>
+          <div>
+            <h4>Email</h4>
+            <p class="small">Update this in <code>templates/public/services.html</code></p>
+            <p><strong>TBD</strong></p>
+          </div>
         </div>
       </div>
-      <a class="btn" href="/book?service_id={{ s.id }}">Book</a>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
+    </div>
+  </section>
 
-{% if not most_popular_services and not other_services %}
-<div class="alert">No services available yet.</div>
-{% endif %}
+  <section class="subscribe">
+    <h3>Already booked? Find your booking</h3>
+    <form class="subscribe-form" method="get" action="{{ url_for('public.find_booking_page') }}">
+      <label for="go-find" class="small" style="color:#fff;">Use your phone or email to locate bookings.</label>
+      <input id="go-find" type="text" name="contact" placeholder="Phone or email (optional)">
+      <button type="submit">Find booking</button>
+    </form>
+  </section>
 {% endblock %}

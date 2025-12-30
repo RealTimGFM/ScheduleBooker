@@ -1,37 +1,44 @@
 {% extends "base.html" %}
+{% block title %}Booking confirmed · ScheduleBooker{% endblock %}
+
 {% block content %}
-<h1>Booking confirmed</h1>
+  <section class="container">
+    {% if booking %}
+      <h1 class="title">Booking confirmed</h1>
+      <p class="intro-text">
+        Your booking code is below. Keep it safe if you need to cancel later.
+      </p>
 
-<div class="card">
-  <div class="title">Your booking is saved.</div>
+      <div class="card" style="max-width: 720px; margin: 40px auto 0;">
+        <div class="card-top">
+          <div class="avatar">CODE</div>
+          <div>
+            <h4 style="font-size: 20px;">{{ booking.booking_code }}</h4>
+            <p class="small">
+              {{ booking.service_name }} · {{ booking.barber_name }}
+            </p>
+            <p><strong>Start:</strong> {{ (booking.start_time or "")|replace("T", " ") }}</p>
+            <p><strong>Status:</strong>
+              {% if booking.status == "booked" %}
+                <span class="pill ok">booked</span>
+              {% else %}
+                <span class="pill bad">{{ booking.status }}</span>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
 
-  <div class="kv" style="margin-top:12px">
-    {% if booking.customer_name %}
-      <div><strong>Name</strong></div><div>{{ booking.customer_name }}</div>
+      <div style="text-align:center; margin-top: 26px;">
+        <a class="nav-link" href="{{ url_for('public.services') }}">Book another</a>
+        <a class="nav-link" href="{{ url_for('public.find_booking_page') }}">Find / cancel a booking</a>
+      </div>
+    {% else %}
+      <h1 class="title">Booking</h1>
+      <p class="intro-text">No booking to display.</p>
+      <div style="margin-top: 18px;">
+        <a class="nav-link" href="{{ url_for('public.services') }}">Back to services</a>
+      </div>
     {% endif %}
-
-    {% if booking.start_time %}
-      <div><strong>Start</strong></div><div>{{ booking.start_time }}</div>
-    {% endif %}
-
-    {% if booking.end_time %}
-      <div><strong>End</strong></div><div>{{ booking.end_time }}</div>
-    {% endif %}
-
-    {% if booking.status %}
-      <div><strong>Status</strong></div><div>{{ booking.status }}</div>
-    {% endif %}
-  </div>
-
-  <div class="alert" style="margin-top:12px">
-    <strong>Booking code:</strong>
-    <span class="code">{{ booking.booking_code }}</span>
-    <div class="subtle">Keep this code safe. You need it to cancel/edit your booking.</div>
-  </div>
-
-  <div class="row" style="margin-top:12px">
-    <a class="btn" href="/find-booking">Find / Cancel a booking</a>
-    <a class="btn btn-ghost" href="/services">Book another service</a>
-  </div>
-</div>
+  </section>
 {% endblock %}

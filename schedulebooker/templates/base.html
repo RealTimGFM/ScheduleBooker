@@ -1,36 +1,116 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ScheduleBooker</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <title>{% block title %}ScheduleBooker{% endblock %}</title>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+
+  {% block head %}{% endblock %}
 </head>
+
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a class="nav-brand" href="/services">Sonthien Barbershop</a>
+  <nav class="navbar">
+    <div class="navdiv">
+      <a href="{{ url_for('public.services') }}" aria-label="Home" style="display:flex; align-items:center; gap:10px;">
+        <img class="logo"
+             src="{{ url_for('static', filename='img/Logo.png') }}"
+             alt="Logo"
+             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+        <span id="logo-fallback" style="display:none; color: var(--gold-warm); font-weight: 800; letter-spacing: 1px;">
+          LOGO
+        </span>
+      </a>
 
-      <div class="nav-links">
-        <a href="/services">Services</a>
-        <a href="/find-booking">Find / Cancel</a>
-        <a href="/admin/login">Admin</a>
+      <ul class="nav-menu">
+        <li><a href="{{ url_for('public.services') }}">Home</a></li>
+        <li><a href="{{ url_for('public.services') }}#services">Service</a></li>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="{{ url_for('admin.day') }}">Admin</a></li>
 
-        <span class="nav-sep"></span>
+        {% if session.get("user_id") %}
+          <li><a href="{{ url_for('appointments.list_appointments') }}">My Appointments</a></li>
+        {% endif %}
+      </ul>
 
-        <a href="{{ url_for('appointments.list_appointments') }}">Appointments</a>
-        {% if session.get('user_id') %}
-          <a href="{{ url_for('auth.logout') }}">Logout</a>
+      <div class="nav-auth">
+        <button id="theme-toggle" type="button" aria-label="Toggle theme">Theme</button>
+
+        {% if session.get("user_id") %}
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}">Login</a>
+          <a class="nav-link" href="{{ url_for('auth.signup') }}">Sign up</a>
+          <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
         {% endif %}
       </div>
     </div>
   </nav>
 
-  <main class="container">
-    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <main>
+    {% if error %}
+      <div class="alert" role="alert"><strong>Note:</strong> {{ error }}</div>
+    {% endif %}
+
     {% block content %}{% endblock %}
   </main>
+
+  <footer class="footer" id="footer">
+    <div class="footer-container">
+      <div>
+        <h4>ScheduleBooker</h4>
+        <p class="footer-copy">Simple booking flow for a small shop.</p>
+      </div>
+      <div>
+        <h4>Links</h4>
+        <p class="footer-copy"><a href="{{ url_for('public.services') }}">Services</a></p>
+        <p class="footer-copy"><a href="{{ url_for('public.find_booking_page') }}">Find booking</a></p>
+      </div>
+      <div>
+        <h4>Hours</h4>
+        <p class="footer-copy">Tuesday–Sunday: 11:00–19:00</p>
+        <p class="footer-copy">Closed Monday</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle (persists in localStorage)
+    (function () {
+      const key = "sb_theme";
+      const saved = localStorage.getItem(key);
+      if (saved === "dark") document.body.setAttribute("data-theme", "dark");
+
+      const btn = document.getElementById("theme-toggle");
+      if (!btn) return;
+
+      function updateLabel() {
+        const isDark = document.body.getAttribute("data-theme") === "dark";
+        btn.textContent = isDark ? "Light" : "Dark";
+      }
+      updateLabel();
+
+      btn.addEventListener("click", function () {
+        const isDark = document.body.getAttribute("data-theme") === "dark";
+        if (isDark) {
+          document.body.removeAttribute("data-theme");
+          localStorage.setItem(key, "light");
+        } else {
+          document.body.setAttribute("data-theme", "dark");
+          localStorage.setItem(key, "dark");
+        }
+        updateLabel();
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
 </body>
 </html>

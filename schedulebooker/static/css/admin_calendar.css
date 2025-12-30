@@ -1,0 +1,275 @@
+/* Admin calendar view styles.
+   Keep this file focused on the calendar UI; global navbar/footer styles live in site.css. */
+
+.calendar-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--white-soft);
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-wrapper h1 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.calendar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.view-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-buttons button {
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--gray);
+  background: var(--white);
+  cursor: pointer;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.view-buttons button.active {
+  background: var(--black-main);
+  color: var(--white);
+}
+
+.calendar-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.date-picker {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--gray);
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+}
+
+.date-picker label {
+  font-size: 0.9rem;
+  color: var(--black-main);
+}
+
+.date-picker input[type="date"] {
+  border: none;
+  background: transparent;
+}
+
+.date-picker button {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  background: var(--gold-warm);
+  color: var(--black-main);
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.back-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background: var(--gold-warm);
+  color: var(--black-main);
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+}
+
+.calendar-view {
+  display: none;
+}
+
+.calendar-view.active-view {
+  display: block;
+}
+
+/* Day view */
+.day-calendar {
+  position: relative;
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.time-slot {
+  height: 52px;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--gray);
+  font-size: 0.95rem;
+  color: var(--black-main);
+  display: flex;
+  align-items: center;
+}
+
+.time-slot:last-child {
+  border-bottom: none;
+}
+
+.now-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gold-warm);
+  z-index: 2;
+}
+
+.admin-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 900px) {
+  .admin-panels {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--gray);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.15rem;
+}
+
+.panel .hint {
+  color: var(--gray-dark);
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.quick-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.quick-form .row {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (min-width: 520px) {
+  .quick-form .row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.quick-form label {
+  font-size: 0.9rem;
+  color: var(--gray-dark);
+}
+
+.quick-form input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+}
+
+.quick-form button {
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--black-main);
+  color: var(--white);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.booking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.booking-item {
+  border: 1px solid var(--gray);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: var(--white-soft);
+}
+
+.booking-item .line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.booking-item .meta {
+  margin-top: 0.35rem;
+  color: var(--gray-dark);
+  font-size: 0.85rem;
+}
+
+/* Week view */
+.week-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.week-day {
+  padding: 0.75rem;
+  text-align: center;
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+  background: var(--white);
+}
+
+/* Month view */
+.month-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.month-day {
+  padding: 1rem 0.6rem;
+  text-align: center;
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+  background: var(--white);
+  position: relative;
+  min-height: 72px;
+}
+
+.booking-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--gold-warm);
+  border-radius: 50%;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}

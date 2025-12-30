@@ -1,49 +1,82 @@
 {% extends "base.html" %}
+{% block title %}Confirm booking · ScheduleBooker{% endblock %}
+
+{% macro price_text(s) -%}
+  {%- if s and s.price_label -%}
+    {{ s.price_label }}
+  {%- elif s -%}
+    ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
+  {%- else -%}
+    —
+  {%- endif -%}
+{%- endmacro %}
+
 {% block content %}
-<h1>Confirm booking</h1>
+  <div class="form-wrapper">
+    <div class="form-card">
+      <h2 class="form-title">Confirm your booking</h2>
+      <p class="form-desc">Review the details, then enter your contact info.</p>
 
-<div class="card">
-  <div class="title">{{ service.name }}</div>
-  <div class="subtle">
-    Barber: {{ barber.name }} · {{ date }} at {{ time }}
-    {% if duration_min %} · {{ duration_min }} min{% endif %}
+      <div class="card" style="margin-bottom: 26px;">
+        <div class="card-top">
+          <div class="avatar">DETAILS</div>
+          <div>
+            <h4>{{ service.name if service else "Booking selection" }}</h4>
+            <p class="small">
+              {% if service %}
+                {{ service.category }} · {{ duration_min or service.duration_min }} min · <strong>{{ price_text(service) }}</strong>
+              {% endif %}
+            </p>
+            <p><strong>Date:</strong> {{ date or "—" }}</p>
+            <p><strong>Time:</strong> {{ time or "—" }}</p>
+            <p><strong>Barber:</strong> {{ barber.name if barber else "—" }}</p>
+          </div>
+        </div>
+      </div>
+
+      {% if service and barber and date and time %}
+        <form class="booking-form" method="post" action="{{ url_for('public.book_finish') }}">
+          <input type="hidden" name="service_id" value="{{ service.id }}">
+          <input type="hidden" name="barber_id" value="{{ barber.id }}">
+          <input type="hidden" name="date" value="{{ date }}">
+          <input type="hidden" name="time" value="{{ time }}">
+
+          <div class="form-group">
+            <label for="customer_name">Full name</label>
+            <input id="customer_name" name="customer_name" type="text" placeholder="Your name" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="customer_phone">Phone</label>
+              <input id="customer_phone" name="customer_phone" type="tel" placeholder="e.g., 5145551234">
+            </div>
+
+            <div class="form-group">
+              <label for="customer_email">Email</label>
+              <input id="customer_email" name="customer_email" type="email" placeholder="you@example.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" placeholder="Anything the shop should know?"></textarea>
+          </div>
+
+          <button class="primary-btn" type="submit">Finish booking</button>
+
+          <p class="auth-note">
+            You’ll receive a booking code after submission. Keep it safe for cancellation.
+          </p>
+        </form>
+      {% else %}
+        <p class="small">
+          Missing booking selection. Go back and select service, barber, date, and time.
+        </p>
+        <div style="margin-top: 16px;">
+          <a class="nav-link" href="{{ url_for('public.services') }}">Back to services</a>
+        </div>
+      {% endif %}
+    </div>
   </div>
-</div>
-
-<form class="card form" method="post" action="/book/finish" style="margin-top:18px">
-  <!-- hidden fields (must match the contract exactly) -->
-  <input type="hidden" name="service_id" value="{{ service.id }}">
-  <input type="hidden" name="barber_id" value="{{ barber.id }}">
-  <input type="hidden" name="date" value="{{ date }}">
-  <input type="hidden" name="time" value="{{ time }}">
-
-  <h2>Customer info</h2>
-
-  <div class="grid-2">
-    <label class="field">
-      <span>Name</span>
-      <input name="customer_name" required>
-    </label>
-
-    <label class="field">
-      <span>Phone</span>
-      <input name="customer_phone" required>
-    </label>
-  </div>
-
-  <label class="field" style="margin-top:12px">
-    <span>Email (optional)</span>
-    <input type="email" name="customer_email">
-  </label>
-
-  <label class="field" style="margin-top:12px">
-    <span>Notes (optional)</span>
-    <textarea name="notes" rows="4" placeholder="Anything the barber should know?"></textarea>
-  </label>
-
-  <div class="row" style="margin-top:12px">
-    <button class="btn" type="submit">Finish booking</button>
-    <a class="btn btn-ghost" href="/book?service_id={{ service.id }}&date={{ date }}&barber_id={{ barber.id }}">Back</a>
-  </div>
-</form>
 {% endblock %}
