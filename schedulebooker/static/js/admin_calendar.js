@@ -1,98 +1,148 @@
-// Admin calendar UI behavior: view switching + "now" line placement.
+// schedulebooker/static/js/admin_calendar.js
+// Handles: Day/Week/Month view switching, date navigation, "now" indicator, and booking modal.
 
 (function () {
-  function qs(sel) { return document.querySelector(sel); }
-  function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
+  const qs = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  function setActiveView(view) {
+  function setActiveView(viewKey) {
     const views = {
-      day: qs('#day-view'),
-      week: qs('#week-view'),
-      month: qs('#month-view'),
+      day: qs("#day-view"),
+      week: qs("#week-view"),
+      month: qs("#month-view"),
     };
+    const btns = {
+      day: qs("#day-view-btn"),
+      week: qs("#week-view-btn"),
+      month: qs("#month-view-btn"),
+    };
+
     Object.keys(views).forEach((k) => {
-      if (!views[k]) return;
-      views[k].classList.toggle('active-view', k === view);
+      if (views[k]) views[k].classList.toggle("active", k === viewKey);
+    });
+    Object.keys(btns).forEach((k) => {
+      if (btns[k]) btns[k].classList.toggle("active", k === viewKey);
     });
 
-    const buttons = {
-      day: qs('#day-view-btn'),
-      week: qs('#week-view-btn'),
-      month: qs('#month-view-btn'),
-    };
-    Object.keys(buttons).forEach((k) => {
-      if (!buttons[k]) return;
-      buttons[k].classList.toggle('active', k === view);
-    });
-  }
+    const now = qs("#now-indicator");
+    if (now) now.style.display = viewKey === "day" ? "flex" : "none";
 
-  function buildMonthGrid() {
-    const container = qs('#month-calendar');
-    if (!container) return;
-
-    // Simple static 30-day grid (good enough for layout); backend month logic can be added later.
-    container.innerHTML = '';
-    for (let day = 1; day <= 30; day += 1) {
-      const cell = document.createElement('div');
-      cell.className = 'month-day';
-      cell.textContent = String(day);
-      // Add a few decorative dots so the UI matches the provided mockup.
-      if (day % 5 === 0) {
-        const dotWrap = document.createElement('div');
-        dotWrap.className = 'booking-dots';
-        for (let i = 0; i < 3; i += 1) {
-          const dot = document.createElement('span');
-          dot.className = 'dot';
-          dotWrap.appendChild(dot);
-        }
-        cell.appendChild(dotWrap);
-      }
-      container.appendChild(cell);
-    }
+    updateNowIndicator();
   }
 
   function updateNowIndicator() {
-    const nowLine = qs('#now-indicator');
-    const dayCal = qs('.day-calendar');
-    if (!nowLine || !dayCal) return;
+    const dayView = qs("#day-view");
+    const now = qs("#now-indicator");
+    const dateInput = qs("#admin-date");
+    const dayCal = qs(".day-calendar");
+    if (!dayView || !now || !dateInput || !dayCal) return;
 
-    const selected = qs('#admin-date');
-    const selectedDate = selected ? selected.value : '';
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-
-    // Only show the "now" line when viewing today's date.
-    if (selectedDate && selectedDate !== todayStr) {
-      nowLine.style.display = 'none';
+    if (!dayView.classList.contains("active")) {
+      now.style.display = "none";
       return;
     }
 
-    nowLine.style.display = 'block';
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    if (dateInput.value && dateInput.value !== todayStr) {
+      now.style.display = "none";
+      return;
+    }
 
+    const startHour = parseInt(dayView.dataset.startHour || "0", 10);
+    const slots = qsa(".day-calendar .time-slot");
+    if (slots.length === 0) return;
+
+    const slotHeight = slots[0].getBoundingClientRect().height || 60;
     const hours = today.getHours();
     const minutes = today.getMinutes();
 
-    const slots = qsa('.day-calendar .time-slot');
-    if (slots.length === 0) return;
+    const topPx = ((hours - startHour) + minutes / 60) * slotHeight;
+    const maxTop = Math.max(0, dayCal.scrollHeight - 2);
 
-    const slotHeight = slots[0].getBoundingClientRect().height;
-    const topPx = (hours * slotHeight) + ((minutes / 60) * slotHeight);
-
-    // Keep line inside the container.
-    const maxTop = dayCal.scrollHeight - 2;
-    nowLine.style.top = String(Math.max(0, Math.min(topPx, maxTop))) + 'px';
+    now.style.display = "flex";
+    now.style.top = `${Math.max(0, Math.min(topPx, maxTop))}px`;
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const dayBtn = qs('#day-view-btn');
-    const weekBtn = qs('#week-view-btn');
-    const monthBtn = qs('#month-view-btn');
+  function setupDateNavigation() {
+    const dateInput = qs("#admin-date");
+    if (!dateInput) return;
 
-    if (dayBtn) dayBtn.addEventListener('click', () => setActiveView('day'));
-    if (weekBtn) weekBtn.addEventListener('click', () => setActiveView('week'));
-    if (monthBtn) monthBtn.addEventListener('click', () => setActiveView('month'));
+    dateInput.addEventListener("change", () => {
+      const val = dateInput.value;
+      const url = new URL(window.location.href);
+      url.searchParams.set("date", val);
+      window.location.href = url.toString();
+    });
+  }
 
-    buildMonthGrid();
+  function setupModal() {
+    const modal = qs("#booking-modal");
+    const openBtn = qs("#open-booking-modal");
+    if (!modal || !openBtn) return;
+
+    const closeEls = qsa("[data-modal-close]");
+    const adminDate = qs("#admin-date");
+    const formDate = qs("#booking-date");
+    const formTime = qs("#booking-time");
+
+    function openModal(prefillTime) {
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+
+      if (formDate && adminDate && adminDate.value) formDate.value = adminDate.value;
+      if (formTime && prefillTime) formTime.value = prefillTime;
+
+      const nameField = qs("#booking-customer-name");
+      if (nameField) nameField.focus();
+    }
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+    }
+
+    openBtn.addEventListener("click", () => openModal());
+
+    closeEls.forEach((el) => el.addEventListener("click", closeModal));
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+    });
+
+    qsa(".time-slot").forEach((slot) => {
+      slot.addEventListener("click", () => {
+        const t = slot.dataset.time || "";
+        openModal(t);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    qs("#day-view-btn")?.addEventListener("click", () => setActiveView("day"));
+    qs("#week-view-btn")?.addEventListener("click", () => setActiveView("week"));
+    qs("#month-view-btn")?.addEventListener("click", () => setActiveView("month"));
+
+    setupDateNavigation();
+    setupModal();
+
+    // Month cells: click a date to jump to that day
+    qsa(".date-cell[data-date]").forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const d = cell.dataset.date;
+        if (!d) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set("date", d);
+        window.location.href = url.toString();
+      });
+    });
+
     updateNowIndicator();
     setInterval(updateNowIndicator, 60 * 1000);
   });

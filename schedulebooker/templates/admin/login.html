@@ -2,28 +2,29 @@
 {% block title %}Admin login · ScheduleBooker{% endblock %}
 
 {% block content %}
-  <div class="auth-wrapper">
-    <div class="auth-card">
-      <h2>Admin Login</h2>
-      <p class="auth-subtitle">Sign in to manage daily bookings.</p>
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <h2>Admin Login</h2>
+    <p class="auth-subtitle">Sign in to manage daily bookings.</p>
 
-      <form class="auth-form" method="post" action="{{ url_for('admin.login') }}">
-        <div class="form-group" style="text-align:left;">
-          <label for="username">Username</label>
-          <input id="username" name="username" type="text" autocomplete="username" required>
-        </div>
+    <form class="auth-form" method="post" action="{{ url_for('admin.login') }}">
+      <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+      <div class="form-group" style="text-align:left;">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required>
+      </div>
 
-        <div class="form-group" style="text-align:left;">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" required>
-        </div>
+      <div class="form-group" style="text-align:left;">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
 
-        <button class="auth-btn" type="submit">Login</button>
-      </form>
+      <button class="auth-btn" type="submit">Login</button>
+    </form>
 
-      <p class="auth-note">
-        This is separate from customer phone-based login.
-      </p>
-    </div>
+    <p class="auth-note">
+      This is separate from customer phone-based login.
+    </p>
   </div>
+</div>
 {% endblock %}

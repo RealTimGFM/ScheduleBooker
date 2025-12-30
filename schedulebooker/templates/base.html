@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,7 +9,8 @@
   <!-- Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- Site styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
@@ -20,10 +22,8 @@
   <nav class="navbar">
     <div class="navdiv">
       <a href="{{ url_for('public.services') }}" aria-label="Home" style="display:flex; align-items:center; gap:10px;">
-        <img class="logo"
-             src="{{ url_for('static', filename='img/Logo.png') }}"
-             alt="Logo"
-             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+        <img class="logo" src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo"
+          onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
         <span id="logo-fallback" style="display:none; color: var(--gold-warm); font-weight: 800; letter-spacing: 1px;">
           LOGO
         </span>
@@ -34,29 +34,32 @@
         <li><a href="{{ url_for('public.services') }}#services">Service</a></li>
         <li><a href="/about">About Us</a></li>
         <li><a href="/contact">Contact</a></li>
-        <li><a href="{{ url_for('admin.day') }}">Admin</a></li>
+        <a class="nav-link" href="{{ url_for('admin.home') }}">Admin</a>
 
         {% if session.get("user_id") %}
-          <li><a href="{{ url_for('appointments.list_appointments') }}">My Appointments</a></li>
+        <li><a href="{{ url_for('appointments.list_appointments') }}">My Appointments</a></li>
         {% endif %}
       </ul>
 
       <div class="nav-auth">
-        <button id="theme-toggle" type="button" aria-label="Toggle theme">Theme</button>
-
-        {% if session.get("user_id") %}
-          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        {% if session.get("admin_user_id") %}
+        <a class="nav-link" href="{{ url_for('admin.logout') }}">Admin logout</a>
+        {% elif session.get("user_id") %}
+        <a class="nav-link" href="{{ url_for('auth.my_appointments') }}">My appointments</a>
+        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
-          <a class="nav-link" href="{{ url_for('auth.signup') }}">Sign up</a>
-          <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+        <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
         {% endif %}
+
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">🌓</button>
       </div>
+
     </div>
   </nav>
 
   <main>
     {% if error %}
-      <div class="alert" role="alert"><strong>Note:</strong> {{ error }}</div>
+    <div class="alert" role="alert"><strong>Note:</strong> {{ error }}</div>
     {% endif %}
 
     {% block content %}{% endblock %}
@@ -113,4 +116,5 @@
 
   {% block scripts %}{% endblock %}
 </body>
+
 </html>

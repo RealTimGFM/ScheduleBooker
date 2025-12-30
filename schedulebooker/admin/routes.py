@@ -10,6 +10,9 @@ from werkzeug.security import check_password_hash
 from ..sqlite_db import execute_db, query_db
 from . import admin_bp
 
+DAY_START_HOUR = 9
+DAY_END_HOUR = 19  # inclusive label (19:00)
+
 
 def render_or_json(template_name: str, **ctx):
     try:
@@ -22,15 +25,13 @@ def require_admin():
     return session.get("admin_user_id") is not None
 
 
-def _iso(dt: datetime) -> str:
-    return dt.isoformat(timespec="seconds")
-
-
-def _parse_date(date_str: str | None) -> date:
+def _parse_date(d: str | None) -> date | None:
+    if not d:
+        return None
     try:
-        return date.fromisoformat(date_str) if date_str else datetime.now().date()
+        return date.fromisoformat(d)
     except ValueError:
-        return datetime.now().date()
+        return None
 
 
 def _parse_time_hhmm(t: str | None) -> time | None:
@@ -43,6 +44,39 @@ def _parse_time_hhmm(t: str | None) -> time | None:
         return None
 
 
+def _iso(dt: datetime) -> str:
+    return dt.isoformat(timespec="seconds")
+
+
+def _month_start(d: date) -> date:
+    return d.replace(day=1)
+
+
+def _month_end_exclusive(d: date) -> date:
+    start = _month_start(d)
+    if start.month == 12:
+        return date(start.year + 1, 1, 1)
+    return date(start.year, start.month + 1, 1)
+
+
+def _week_start_monday(d: date) -> date:
+    return d - timedelta(days=d.weekday())  # Monday=0
+
+
+@admin_bp.get("/")
+def home():
+    """Navbar entry point: if not logged in, go to admin login; else go to admin calendar."""
+    if require_admin():
+        return redirect(url_for("admin.day"))
+    return redirect(url_for("admin.login"))
+
+
+@admin_bp.get("/logout")
+def logout():
+    session.pop("admin_user_id", None)
+    return redirect(url_for("public.index"))
+
+
 @admin_bp.get("/login")
 def login():
     return render_or_json("admin/login.html", error=None)
@@ -53,45 +87,133 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
-    row = query_db(
-        "SELECT id, password_hash FROM admin_users WHERE username = ?",
-        (username,),
-        one=True,
-    )
-
+    row = query_db("SELECT * FROM admin_users WHERE username = ?", (username,), one=True)
     if not row or not check_password_hash(row["password_hash"], password):
         return render_or_json("admin/login.html", error="Invalid username/password")
 
     session["admin_user_id"] = row["id"]
+
+    next_url = (request.form.get("next") or "").strip()
+    if next_url.startswith("/"):
+        return redirect(next_url)
+
     return redirect(url_for("admin.day"))
 
 
 @admin_bp.get("/day")
 def day():
     if not require_admin():
-        return redirect(url_for("admin.login"))
+        return redirect(url_for("admin.login", next=request.full_path))
 
     date_str = request.args.get("date")
-    day = _parse_date(date_str)
+    selected_day = _parse_date(date_str) or date.today()
 
-    day_start = datetime.combine(day, time(0, 0))
-    day_end = day_start + timedelta(days=1)
+    # Day bookings
+    start = datetime.combine(selected_day, time(0, 0))
+    end = start + timedelta(days=1)
 
-    rows = query_db(
-        "SELECT a.*, s.name AS service_name, b.name AS barber_name "
-        "FROM appointments a "
-        "LEFT JOIN services s ON s.id = a.service_id "
-        "LEFT JOIN barbers b ON b.id = a.barber_id "
-        "WHERE a.start_time >= ? AND a.start_time < ? "
-        "ORDER BY a.start_time ASC",
-        (_iso(day_start), _iso(day_end)),
+    bookings = query_db(
+        """
+        SELECT a.*,
+               s.name AS service_name,
+               b.name AS barber_name
+        FROM appointments a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN barbers  b ON a.barber_id = b.id
+        WHERE a.start_time >= ? AND a.start_time < ?
+        ORDER BY a.start_time
+        """,
+        (_iso(start), _iso(end)),
     )
-    bookings = [dict(r) for r in rows]
+
+    # For modal selects
+    services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+    barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+
+    # Week view (Mon-Sun)
+    wk_start = _week_start_monday(selected_day)
+    wk_end = wk_start + timedelta(days=7)
+
+    week_rows = query_db(
+        """
+        SELECT a.*,
+               s.name AS service_name,
+               b.name AS barber_name
+        FROM appointments a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN barbers  b ON a.barber_id = b.id
+        WHERE a.start_time >= ? AND a.start_time < ?
+        ORDER BY a.start_time
+        """,
+        (_iso(datetime.combine(wk_start, time(0, 0))), _iso(datetime.combine(wk_end, time(0, 0)))),
+    )
+
+    week_map: dict[str, list[dict]] = {}
+    for r in week_rows:
+        key = (r["start_time"] or "")[:10]
+        week_map.setdefault(key, []).append(dict(r))
+
+    week_days = []
+    for i in range(7):
+        d = wk_start + timedelta(days=i)
+        iso = d.isoformat()
+        week_days.append(
+            {"date": iso, "label": d.strftime("%a %m/%d"), "bookings": week_map.get(iso, [])}
+        )
+
+    # Month view (counts per day + grid)
+    m_start = _month_start(selected_day)
+    m_end = _month_end_exclusive(selected_day)
+
+    month_counts_rows = query_db(
+        """
+        SELECT substr(start_time, 1, 10) AS d, COUNT(*) AS cnt
+        FROM appointments
+        WHERE start_time >= ? AND start_time < ?
+        GROUP BY d
+        """,
+        (_iso(datetime.combine(m_start, time(0, 0))), _iso(datetime.combine(m_end, time(0, 0)))),
+    )
+    month_counts = {r["d"]: int(r["cnt"]) for r in month_counts_rows}
+
+    cells = []
+    for _ in range(m_start.weekday()):
+        cells.append(None)
+
+    days_in_month = (m_end - m_start).days
+    today_iso = date.today().isoformat()
+    selected_iso = selected_day.isoformat()
+
+    for i in range(days_in_month):
+        d = m_start + timedelta(days=i)
+        iso = d.isoformat()
+        cells.append(
+            {
+                "date": iso,
+                "day": d.day,
+                "count": month_counts.get(iso, 0),
+                "is_today": iso == today_iso,
+                "is_selected": iso == selected_iso,
+            }
+        )
+
+    while len(cells) % 7 != 0:
+        cells.append(None)
+
+    month_label = m_start.strftime("%B %Y")
+    day_hours = list(range(DAY_START_HOUR, DAY_END_HOUR + 1))
 
     return render_or_json(
         "admin/day.html",
-        date=day.isoformat(),
-        bookings=bookings,
+        date=selected_day.isoformat(),
+        bookings=[dict(r) for r in bookings],
+        services=[dict(r) for r in services],
+        barbers=[dict(r) for r in barbers],
+        week_days=week_days,
+        month_cells=cells,
+        month_label=month_label,
+        day_hours=day_hours,
+        day_start_hour=DAY_START_HOUR,
         error=None,
     )
 
@@ -99,56 +221,51 @@ def day():
 @admin_bp.post("/book")
 def create_booking():
     if not require_admin():
-        return redirect(url_for("admin.login"))
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
 
     customer_name = (request.form.get("customer_name") or "").strip()
-    customer_phone = (request.form.get("customer_phone") or "").strip() or None
-    customer_email = (request.form.get("customer_email") or "").strip().lower() or None
+    customer_phone = (request.form.get("customer_phone") or "").strip()
+    customer_email = (request.form.get("customer_email") or "").strip()
 
     service_id = request.form.get("service_id", type=int)
-    barber_id = request.form.get("barber_id", type=int)  # optional (can be None)
-    date_str = request.form.get("date")
-    time_str = request.form.get("time")
+    barber_id = request.form.get("barber_id", type=int)
 
-    if not customer_name or not service_id or not date_str or not time_str:
-        # send them back to the day view they were on (best effort)
-        return redirect(url_for("admin.day", date=date_str))
+    d = _parse_date(request.form.get("date"))
+    t = _parse_time_hhmm(request.form.get("time"))
 
-    day = _parse_date(date_str)
-    t = _parse_time_hhmm(time_str)
-    if not t:
-        return redirect(url_for("admin.day", date=day.isoformat()))
+    if not (customer_name and service_id and d and t):
+        return redirect(url_for("admin.day", date=(d or date.today()).isoformat()))
 
-    start_dt = datetime.combine(day, t)
+    start_dt = datetime.combine(d, t)
 
-    # NO VALIDATIONS: compute end_time from service duration (fallback 30)
-    svc = query_db("SELECT duration_min FROM services WHERE id = ?", (service_id,), one=True)
-    duration_min = int(svc["duration_min"]) if svc and svc["duration_min"] else 30
+    service = query_db("SELECT * FROM services WHERE id = ?", (service_id,), one=True)
+    duration_min = int(service["duration_min"]) if service else 30
     end_dt = start_dt + timedelta(minutes=duration_min)
 
-    now = _iso(datetime.now())
-    booking_code = secrets.token_urlsafe(8).replace("-", "").replace("_", "")
+    booking_code = secrets.token_urlsafe(6)
 
     execute_db(
-        "INSERT INTO appointments "
-        "(user_id, barber_id, service_id, customer_name, customer_phone, customer_email, "
-        " start_time, end_time, notes, status, booking_code, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+        INSERT INTO appointments (
+            customer_name, customer_phone, customer_email,
+            service_id, barber_id,
+            start_time, end_time,
+            status, booking_code, notes
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
-            None,
-            barber_id,  # may be None
-            service_id,
             customer_name,
-            customer_phone,
-            customer_email,
+            customer_phone or None,
+            customer_email or None,
+            service_id,
+            barber_id,
             _iso(start_dt),
             _iso(end_dt),
-            "",  # notes not in admin Day 5 form; keep empty
             "booked",
             booking_code,
-            now,
-            now,
+            "",
         ),
     )
 
-    return redirect(url_for("admin.day", date=day.isoformat()))
+    return redirect(url_for("admin.day", date=d.isoformat()))

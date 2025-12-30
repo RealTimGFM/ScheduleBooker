@@ -1,177 +1,200 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel</title>
-  <link rel="stylesheet" href="/static/css/site.css" />
-  <link rel="stylesheet" href="/static/css/admin.css" />
-</head>
-<body>
-  <header class="header">
-    <div class="header-container">
-      <div class="header-left">
-        <a href="/services">
-          <img src="/static/img/Logo.png" class="logo" alt="Logo" />
-        </a>
-      </div>
-      <nav class="header-nav">
-        <a href="/services">Services</a>
-        <a href="/about">About Us</a>
-        <a href="/contact">Contact</a>
-      </nav>
-      <div class="header-right">
-        <a class="btn btn-outline" href="/auth/logout">Logout</a>
-      </div>
+{% extends "base.html" %}
+{% block title %}Admin · ScheduleBooker{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="calendar-wrapper">
+  <div class="admin-toolbar">
+    <div class="admin-toolbar-left">
+      <h1 class="admin-title">Admin calendar</h1>
+      <p class="admin-subtitle">Manage bookings and schedules.</p>
     </div>
-  </header>
 
-  <div class="container">
-    <section class="admin-panel">
-      <div class="controls">
-        <button class="active" data-view="day">Day</button>
-        <button data-view="week">Week</button>
-        <button data-view="month">Month</button>
+    <div class="admin-toolbar-right">
+      <label class="sr-only" for="admin-date">Date</label>
+      <input id="admin-date" class="admin-date" type="date" value="{{ date }}" />
+
+      <div class="controls" role="tablist" aria-label="Calendar views">
+        <button id="day-view-btn" class="active" type="button" role="tab" aria-controls="day-view">Day</button>
+        <button id="week-view-btn" type="button" role="tab" aria-controls="week-view">Week</button>
+        <button id="month-view-btn" type="button" role="tab" aria-controls="month-view">Month</button>
       </div>
 
-      <!-- DAY VIEW -->
-      <div class="view day-view active">
-        <div class="time-column">
-          <script>
-            for (let hour = 9; hour <= 19; hour++) {
-              document.write(`<div class="time-slot">${hour}:00</div>`);
-            }
-          </script>
+      <button id="open-booking-modal" class="btn" type="button">Add booking</button>
+    </div>
+  </div>
+
+  <section id="day-view" class="calendar-view active" data-start-hour="{{ day_start_hour }}">
+    <div class="admin-grid">
+      <div class="day-calendar" aria-label="Day timeline">
+        <div id="now-indicator" aria-hidden="true">
+          <span class="now-dot"></span>
+          <span class="now-line"></span>
         </div>
 
-        <div class="appointments-column">
-          <h2 style="margin:0 0 10px 0">Bookings for {{ date }}</h2>
+        {% for h in day_hours %}
+          <div class="time-slot" data-time="{{ "%02d:00"|format(h) }}">{{ "%02d:00"|format(h) }}</div>
+        {% endfor %}
+      </div>
 
-          {% if bookings and bookings|length %}
-            <div class="bookings-list">
-              {% for b in bookings %}
-                <div class="booking-card">
-                  <div class="booking-time">
-                    {{ (b["start_time"] or "")[11:16] }} - {{ (b["end_time"] or "")[11:16] }}
+      <aside class="side-panel">
+        <h2 class="panel-title">Bookings for {{ date }}</h2>
+
+        {% if bookings|length == 0 %}
+          <p class="muted">No bookings for this day.</p>
+        {% else %}
+          <div class="booking-list">
+            {% for b in bookings %}
+              <div class="booking-card">
+                <div class="booking-time">
+                  {{ b.start_time[11:16] }}{% if b.end_time %}–{{ b.end_time[11:16] }}{% endif %}
+                </div>
+                <div class="booking-main">
+                  <div class="booking-name">{{ b.customer_name }}</div>
+                  <div class="booking-meta">
+                    {% if b.service_name %}{{ b.service_name }}{% elif b.service_id %}Service #{{ b.service_id }}{% else %}Service (unspecified){% endif %}
+                    ·
+                    {% if b.barber_name %}{{ b.barber_name }}{% elif b.barber_id %}Barber #{{ b.barber_id }}{% else %}Any barber{% endif %}
                   </div>
-                  <div class="booking-main">
-                    <div class="booking-title">
-                      {{ b.get("service_name") or ("Service #" ~ b.get("service_id")) }}
-                      {% if b.get("barber_name") %} • {{ b.get("barber_name") }}{% endif %}
-                    </div>
-                    <div class="booking-sub">
-                      {{ b.get("customer_name") or "Customer" }}
-                      {% if b.get("status") %} • {{ b.get("status") }}{% endif %}
-                    </div>
-                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </aside>
+    </div>
+  </section>
+
+  <section id="week-view" class="calendar-view">
+    <h2 class="panel-title">Week view</h2>
+    <div class="week-grid">
+      {% for d in week_days %}
+        <div class="week-day">
+          <div class="week-head">
+            <div class="week-label">{{ d.label }}</div>
+            <div class="week-date">{{ d.date }}</div>
+          </div>
+
+          {% if d.bookings|length == 0 %}
+            <div class="muted" style="margin-top:8px;">No bookings</div>
+          {% else %}
+            <div class="week-bookings">
+              {% for b in d.bookings %}
+                <div class="booking-mini">
+                  <span class="booking-mini-time">{{ b.start_time[11:16] }}</span>
+                  <span class="booking-mini-name">{{ b.customer_name }}</span>
                 </div>
               {% endfor %}
             </div>
-          {% else %}
-            <p class="muted">No bookings for this day.</p>
           {% endif %}
-
-          <hr style="margin:18px 0" />
-
-          <h3 style="margin:0 0 10px 0">Create booking</h3>
-          {% if error %}
-            <p class="error">{{ error }}</p>
-          {% endif %}
-
-          <form class="booking-form" method="post" action="/admin/book">
-            <div class="grid">
-              <div>
-                <label>Customer name</label>
-                <input name="customer_name" required />
-              </div>
-
-              <div>
-                <label>Customer phone (optional)</label>
-                <input name="customer_phone" />
-              </div>
-
-              <div>
-                <label>Customer email (optional)</label>
-                <input name="customer_email" type="email" />
-              </div>
-
-              <div>
-                <label>Service ID</label>
-                <input name="service_id" type="number" min="1" required />
-              </div>
-
-              <div>
-                <label>Barber ID (optional)</label>
-                <input name="barber_id" type="number" min="1" />
-              </div>
-
-              <div>
-                <label>Date</label>
-                <input name="date" type="date" value="{{ date }}" required />
-              </div>
-
-              <div>
-                <label>Time</label>
-                <input name="time" type="time" required />
-              </div>
-            </div>
-
-            <button class="btn" type="submit" style="margin-top:10px">Create</button>
-          </form>
         </div>
-      </div>
-
-      <!-- WEEK VIEW (static UI only) -->
-      <div class="view week-view">
-        <h2>Week View</h2>
-        <div class="week-grid">
-          <div class="day-col">Mon</div>
-          <div class="day-col">Tue</div>
-          <div class="day-col">Wed</div>
-          <div class="day-col">Thu</div>
-          <div class="day-col">Fri</div>
-          <div class="day-col">Sat</div>
-          <div class="day-col">Sun</div>
-        </div>
-      </div>
-
-      <!-- MONTH VIEW (static UI only) -->
-      <div class="view month-view">
-        <h2>Month View</h2>
-        <div class="month-grid">
-          <script>
-            for (let i = 1; i <= 30; i++) {
-              document.write(`<div class="date-cell">${i}<div class="dot"></div></div>`);
-            }
-          </script>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-left">
-        <img src="/static/img/Logo.png" class="logo" alt="Logo" />
-        <p class="footer-copy">Copyright</p>
-      </div>
+      {% endfor %}
     </div>
-  </footer>
+  </section>
 
-  <script>
-    const buttons = document.querySelectorAll(".controls button[data-view]");
-    const views = document.querySelectorAll(".view");
+  <section id="month-view" class="calendar-view">
+    <div class="month-head">
+      <h2 class="panel-title">{{ month_label }}</h2>
+    </div>
 
-    buttons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        buttons.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
+    <div class="month-grid month-grid-with-dow">
+      {% for dow in ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}
+        <div class="dow">{{ dow }}</div>
+      {% endfor %}
 
-        const viewName = btn.dataset.view;
-        views.forEach((v) => v.classList.remove("active"));
-        document.querySelector(`.${viewName}-view`).classList.add("active");
-      });
-    });
-  </script>
-</body>
-</html>
+      {% for cell in month_cells %}
+        {% if cell %}
+          <div class="date-cell{% if cell.is_selected %} selected{% endif %}{% if cell.is_today %} today{% endif %}" data-date="{{ cell.date }}">
+            <div class="date-num">{{ cell.day }}</div>
+
+            {% if cell.count > 0 %}
+              <div class="date-dots" aria-label="{{ cell.count }} bookings">
+                {% for _ in range(cell.count if cell.count < 4 else 3) %}
+                  <span class="dot"></span>
+                {% endfor %}
+                {% if cell.count > 3 %}
+                  <span class="dot-more">+{{ cell.count - 3 }}</span>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="date-cell empty"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div id="booking-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" data-modal-close></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
+    <div class="modal-head">
+      <h2 id="booking-modal-title">Create booking</h2>
+      <button class="icon-btn" type="button" aria-label="Close" data-modal-close>×</button>
+    </div>
+
+    <form method="post" action="{{ url_for('admin.create_booking') }}" class="modal-form">
+      <div class="grid-2">
+        <div class="field">
+          <label for="booking-customer-name">Customer name</label>
+          <input id="booking-customer-name" name="customer_name" required />
+        </div>
+
+        <div class="field">
+          <label for="booking-phone">Customer phone (optional)</label>
+          <input id="booking-phone" name="customer_phone" />
+        </div>
+
+        <div class="field">
+          <label for="booking-email">Customer email (optional)</label>
+          <input id="booking-email" name="customer_email" type="email" />
+        </div>
+
+        <div class="field">
+          <label for="booking-service">Service</label>
+          <select id="booking-service" name="service_id" required>
+            <option value="" disabled selected>Select a service</option>
+            {% for s in services %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.duration_min }}m) · ${{ "%.2f"|format(s.price) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="booking-barber">Barber (optional)</label>
+          <select id="booking-barber" name="barber_id">
+            <option value="">Any barber</option>
+            {% for b in barbers %}
+              <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="booking-date">Date</label>
+          <input id="booking-date" name="date" type="date" value="{{ date }}" required />
+        </div>
+
+        <div class="field">
+          <label for="booking-time">Time</label>
+          <input id="booking-time" name="time" type="time" required />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" type="submit">Create</button>
+        <button class="btn btn-outline" type="button" data-modal-close>Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/admin_calendar.js') }}" defer></script>
+{% endblock %}
