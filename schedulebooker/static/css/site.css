@@ -668,3 +668,13 @@ th {
   font-size: 14px;
   color: #aaa;
 }
+
+.theme-toggle.icon-only {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
