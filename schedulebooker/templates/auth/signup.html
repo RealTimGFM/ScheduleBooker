@@ -1,26 +1,52 @@
 {% extends "base.html" %}
+{% block title %}Sign up · ScheduleBooker{% endblock %}
+
 {% block content %}
-<div class="page">
-  <div class="card">
-    <h1>Create account</h1>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <p class="auth-subtitle">Sign up to start booking your appointment.</p>
 
-    {% if error %}
-      <p class="error">{{ error }}</p>
-    {% endif %}
+      {% if error %}
+        <p class="auth-note" style="color: var(--red-main); font-weight: 800; margin-top: -14px; margin-bottom: 18px;">
+          {{ error }}
+        </p>
+      {% endif %}
 
-    <form method="post" action="/auth/signup">
-      <label>Full name</label>
-      <input type="text" name="name" placeholder="Your name" />
+      <form class="auth-form" method="post" action="{{ url_for('auth.signup') }}">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Your full name"
+            autocomplete="name"
+          >
+        </div>
 
-      <label>Phone</label>
-      <input type="text" name="phone" placeholder="e.g. 5141234567" required />
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="Digits only (e.g. 5141234567)"
+            autocomplete="tel"
+            required
+          >
+        </div>
 
-      <button class="btn" type="submit">Sign up</button>
-    </form>
+        <button type="submit" class="auth-btn">Sign up</button>
+      </form>
 
-    <p class="muted" style="margin-top:12px">
-      Already have an account? <a href="/auth/login">Login</a>
-    </p>
+      <p class="auth-note">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>
+      </p>
+
+      <p class="auth-note">
+        No password needed — your phone number is your login.
+      </p>
+    </div>
   </div>
-</div>
 {% endblock %}

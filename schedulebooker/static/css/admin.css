@@ -885,3 +885,90 @@ hr {
 
 .date-cell[data-date] { cursor: pointer; }
 .date-cell[data-date]:hover { background: rgba(255,255,255,0.04); }
+/* =========================
+   Large UI mode (barber-friendly)
+   Adjust these values anytime.
+   ========================= */
+
+.calendar-wrapper {
+  max-width: 1500px;
+}
+
+.admin-title {
+  font-size: 34px;
+}
+
+.admin-subtitle {
+  font-size: 16px;
+}
+
+.controls button {
+  font-size: 18px;
+  padding: 12px 18px;
+  border-radius: 16px;
+}
+
+.admin-date {
+  font-size: 18px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.btn {
+  font-size: 18px;
+  padding: 12px 18px;
+  border-radius: 16px;
+}
+
+/* Day timeline */
+.day-calendar {
+  font-size: 18px;
+}
+
+.time-slot {
+  min-height: 80px;           /* BIGGER rows */
+  font-size: 18px;
+  padding: 18px 16px;
+}
+
+/* Booking cards */
+.booking-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.booking-time {
+  font-size: 18px;
+}
+
+.booking-name {
+  font-size: 18px;
+}
+
+/* Week view */
+.week-grid {
+  gap: 14px;
+}
+
+.week-day {
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.week-label {
+  font-size: 18px;
+}
+
+/* Month view */
+.month-grid-with-dow .dow {
+  font-size: 16px;
+  padding: 12px 0;
+}
+
+.date-cell {
+  min-height: 100px;          /* BIGGER cells */
+}
+
+.date-num {
+  font-size: 20px;
+}

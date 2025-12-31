@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import time as pytime
 from datetime import date, datetime, time, timedelta
 
 from flask import jsonify, redirect, render_template, request, session, url_for
@@ -13,6 +14,15 @@ from . import admin_bp
 DAY_START_HOUR = 9
 DAY_END_HOUR = 19  # inclusive label (19:00)
 
+# Admin security / UX
+ADMIN_IDLE_TIMEOUT_SEC = 15 * 60  # 15 minutes
+_ADMIN_EPOCH = secrets.token_urlsafe(
+    12
+)  # changes every app start (forces admin logged out on restart)
+
+_ADMIN_EPOCH_KEY = "_admin_epoch"
+_ADMIN_LAST_SEEN_KEY = "_admin_last_seen"
+
 
 def render_or_json(template_name: str, **ctx):
     try:
@@ -21,8 +31,54 @@ def render_or_json(template_name: str, **ctx):
         return jsonify({"template": template_name, "context": ctx})
 
 
-def require_admin():
-    return session.get("admin_user_id") is not None
+def _clear_admin_session():
+    session.pop("admin_user_id", None)
+    session.pop(_ADMIN_EPOCH_KEY, None)
+    session.pop(_ADMIN_LAST_SEEN_KEY, None)
+
+
+@admin_bp.before_app_request
+def _admin_session_housekeeping():
+    """
+    1) Force admin to be logged out when the app starts (epoch mismatch after restart).
+    2) Auto logout after 15 minutes of inactivity (based on last admin activity).
+    3) Do NOT extend admin session while browsing public pages; only extend on /admin routes.
+    """
+    if "admin_user_id" not in session:
+        return
+
+    # If app restarted, invalidate any old admin cookies immediately (so navbar won't show "Admin logout")
+    if session.get(_ADMIN_EPOCH_KEY) != _ADMIN_EPOCH:
+        _clear_admin_session()
+        return
+
+    now = int(pytime.time())
+    last_seen = session.get(_ADMIN_LAST_SEEN_KEY)
+
+    if last_seen is not None:
+        try:
+            last_seen = int(last_seen)
+        except (TypeError, ValueError):
+            last_seen = None
+
+    # Expire if idle too long
+    if last_seen is not None and (now - last_seen) > ADMIN_IDLE_TIMEOUT_SEC:
+        _clear_admin_session()
+        return
+
+    # Only "keep alive" when actively using admin pages
+    if request.path.startswith("/admin"):
+        session[_ADMIN_LAST_SEEN_KEY] = now
+
+
+def require_admin() -> bool:
+    # Housekeeping already runs before requests, but keep this defensive.
+    if session.get("admin_user_id") is None:
+        return False
+    if session.get(_ADMIN_EPOCH_KEY) != _ADMIN_EPOCH:
+        _clear_admin_session()
+        return False
+    return True
 
 
 def _parse_date(d: str | None) -> date | None:
@@ -73,7 +129,7 @@ def home():
 
 @admin_bp.get("/logout")
 def logout():
-    session.pop("admin_user_id", None)
+    _clear_admin_session()
     return redirect(url_for("public.services"))
 
 
@@ -87,11 +143,16 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
-    row = query_db("SELECT * FROM admin_users WHERE username = ?", (username,), one=True)
+    row = query_db(
+        "SELECT * FROM admin_users WHERE username = ?", (username,), one=True
+    )
     if not row or not check_password_hash(row["password_hash"], password):
         return render_or_json("admin/login.html", error="Invalid username/password")
 
+    # Admin session starts here
     session["admin_user_id"] = row["id"]
+    session[_ADMIN_EPOCH_KEY] = _ADMIN_EPOCH
+    session[_ADMIN_LAST_SEEN_KEY] = int(pytime.time())
 
     next_url = (request.form.get("next") or "").strip()
     if next_url.startswith("/"):
@@ -126,11 +187,13 @@ def day():
         (_iso(start), _iso(end)),
     )
 
-    # For modal selects
-    services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
-    barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+    services = query_db(
+        "SELECT id, name, duration_min, price FROM services ORDER BY id ASC"
+    )
+    barbers = query_db(
+        "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC"
+    )
 
-    # Week view (Mon-Sun)
     wk_start = _week_start_monday(selected_day)
     wk_end = wk_start + timedelta(days=7)
 
@@ -145,7 +208,10 @@ def day():
         WHERE a.start_time >= ? AND a.start_time < ?
         ORDER BY a.start_time
         """,
-        (_iso(datetime.combine(wk_start, time(0, 0))), _iso(datetime.combine(wk_end, time(0, 0)))),
+        (
+            _iso(datetime.combine(wk_start, time(0, 0))),
+            _iso(datetime.combine(wk_end, time(0, 0))),
+        ),
     )
 
     week_map: dict[str, list[dict]] = {}
@@ -158,10 +224,13 @@ def day():
         d = wk_start + timedelta(days=i)
         iso = d.isoformat()
         week_days.append(
-            {"date": iso, "label": d.strftime("%a %m/%d"), "bookings": week_map.get(iso, [])}
+            {
+                "date": iso,
+                "label": d.strftime("%a %m/%d"),
+                "bookings": week_map.get(iso, []),
+            }
         )
 
-    # Month view (counts per day + grid)
     m_start = _month_start(selected_day)
     m_end = _month_end_exclusive(selected_day)
 
@@ -172,7 +241,10 @@ def day():
         WHERE start_time >= ? AND start_time < ?
         GROUP BY d
         """,
-        (_iso(datetime.combine(m_start, time(0, 0))), _iso(datetime.combine(m_end, time(0, 0)))),
+        (
+            _iso(datetime.combine(m_start, time(0, 0))),
+            _iso(datetime.combine(m_end, time(0, 0))),
+        ),
     )
     month_counts = {r["d"]: int(r["cnt"]) for r in month_counts_rows}
 
@@ -221,7 +293,9 @@ def day():
 @admin_bp.post("/book")
 def create_booking():
     if not require_admin():
-        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.day"))
+        )
 
     customer_name = (request.form.get("customer_name") or "").strip()
     customer_phone = (request.form.get("customer_phone") or "").strip()

@@ -7,15 +7,34 @@
       <h2>Login</h2>
       <p class="auth-subtitle">Enter your name and phone number.</p>
 
+      {% if error %}
+        <p class="auth-note" style="color: var(--red-main); font-weight: 800; margin-top: -14px; margin-bottom: 18px;">
+          {{ error }}
+        </p>
+      {% endif %}
+
       <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
-        <div class="form-group" style="text-align:left;">
+        <div class="form-group">
           <label for="name">Name</label>
-          <input id="name" name="name" type="text" placeholder="Your name" required>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            autocomplete="name"
+          >
         </div>
 
-        <div class="form-group" style="text-align:left;">
+        <div class="form-group">
           <label for="phone">Phone</label>
-          <input id="phone" name="phone" type="tel" placeholder="Digits only" required>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="Digits only"
+            autocomplete="tel"
+            required
+          >
         </div>
 
         <button class="auth-btn" type="submit">Continue</button>
@@ -25,7 +44,9 @@
         If your phone number is new, an account is created automatically.
       </p>
 
-      <p class="auth-note">New here? <a href="{{ url_for('auth.signup') }}">Sign up</a></p>
+      <p class="auth-note">
+        New here? <a href="{{ url_for('auth.signup') }}">Sign up</a>
+      </p>
     </div>
   </div>
 {% endblock %}
