@@ -42,7 +42,9 @@ def login_post():
 
     pw_hash = (row["password_hash"] or "").strip()
     if not pw_hash:
-        return render_template("auth/login.html", error="This account has no PIN yet. Please sign up.")
+        return render_template(
+            "auth/login.html", error="This account has no PIN yet. Please sign up."
+        )
 
     if not check_password_hash(pw_hash, pin):
         return render_template("auth/login.html", error="Invalid phone or PIN")
