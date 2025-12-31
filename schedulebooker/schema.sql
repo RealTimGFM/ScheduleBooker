@@ -3,9 +3,10 @@ PRAGMA foreign_keys = ON;
 
 -- Users (used by /auth/login phone-based flow)
 CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    phone_number  TEXT NOT NULL UNIQUE,
-    name          TEXT
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  phone_number TEXT NOT NULL UNIQUE,
+  name TEXT,
+  password_hash TEXT
 );
 
 -- Services (used by public booking + internal appointments)

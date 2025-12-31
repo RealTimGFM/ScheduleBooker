@@ -2,45 +2,47 @@
 {% block title %}My appointments · ScheduleBooker{% endblock %}
 
 {% block content %}
-  <section class="container">
-    <h1 class="title">My appointments</h1>
-    <p class="intro-text">
-      This section is linked to your phone-based login.
-    </p>
-    <div style="margin-top: 18px;">
-      <a class="nav-link" href="{{ url_for('appointments.new_appointment') }}">+ New appointment</a>
-      <a class="nav-link" href="{{ url_for('public.services') }}">Services</a>
-    </div>
-  </section>
+<section class="container">
+  <h1 class="title">My appointments</h1>
+  <p class="intro-text">
+    This section is linked to your phone + PIN login.
+  </p>
 
-  <div class="table-wrap">
-    <div class="table-card">
-      <h3>Upcoming</h3>
-
-      {% if appointments and appointments|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>Start</th>
-              <th>Name</th>
-              <th>Service</th>
-              <th style="width: 90px;">Edit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for a in appointments %}
-              <tr>
-                <td>{{ (a.start_time or a["start_time"] or "")|replace("T", " ") }}</td>
-                <td>{{ a.customer_name or a["customer_name"] }}</td>
-                <td>{{ a.service_name or a["service_name"] or "—" }}</td>
-                <td><a class="nav-link" href="{{ url_for('appointments.edit_appointment', appointment_id=(a.id or a['id'])) }}">Edit</a></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <p>No appointments yet.</p>
-      {% endif %}
-    </div>
+  <div style="margin-top: 18px;">
+    <a class="nav-link" href="{{ url_for('appointments.new_appointment') }}">+ New appointment</a>
+    <a class="nav-link" href="{{ url_for('public.services') }}">Services</a>
   </div>
+</section>
+
+<div class="table-wrap">
+  <div class="table-card">
+    <h3>Upcoming</h3>
+
+    {% if appointments and appointments|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Start</th>
+          <th>Name</th>
+          <th>Service</th>
+          <th style="width: 90px;">Edit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>{{ (a.start_time or a["start_time"] or "")|replace("T", " ") }}</td>
+          <td>{{ a.customer_name or a["customer_name"] }}</td>
+          <td>{{ a.service_name or a["service_name"] or "—" }}</td>
+          <td><a class="nav-link"
+              href="{{ url_for('appointments.edit_appointment', appointment_id=(a.id or a['id'])) }}">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>No appointments yet.</p>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

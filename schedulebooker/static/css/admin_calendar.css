@@ -2,7 +2,7 @@
    Keep this file focused on the calendar UI; global navbar/footer styles live in site.css. */
 
 .calendar-wrapper {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 2rem;
   background: var(--white-soft);

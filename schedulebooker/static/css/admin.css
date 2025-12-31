@@ -39,7 +39,7 @@ body {
 }
 
 .navdiv {
-    max-width: 1200px;
+    max-width: 1500px;
     margin: auto;
     padding: 18px 24px;
     display: flex;
@@ -73,7 +73,7 @@ body {
 
 /* HEADER */
 .admin-header {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 40px auto 20px;
   padding: 0 24px;
   display: flex;
@@ -112,7 +112,7 @@ body {
 
 /* WRAPPER */
 .calendar-wrapper {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto 120px;
   padding: 30px 24px;
   background: var(--bg-card);

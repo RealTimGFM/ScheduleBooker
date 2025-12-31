@@ -1,5 +1,3 @@
-# schedulebooker/sqlite_db.py
-
 import os
 import sqlite3
 
@@ -7,33 +5,53 @@ from flask import current_app, g
 
 
 def init_app(app):
-    """Run this from create_app() to set up the DB path + teardown."""
-
-    # Ensure instance folder exists (same as your old code)
+    app.config["DATABASE_PATH"] = os.path.join(
+        app.instance_path,
+        app.config.get("DATABASE", "appointments.db"),
+    )
     os.makedirs(app.instance_path, exist_ok=True)
+    app.teardown_appcontext(close_db)
 
-    # Build full DB path inside instance/
-    db_path = os.path.join(app.instance_path, app.config.get("DATABASE", "appointments.db"))
-    app.config["DATABASE_PATH"] = db_path
 
-    @app.teardown_appcontext
-    def close_db(e=None):
-        db = g.pop("db", None)
-        if db is not None:
-            db.close()
+def _table_exists(db: sqlite3.Connection, table_name: str) -> bool:
+    row = db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def _ensure_users_password_hash_column(db: sqlite3.Connection) -> None:
+    # If schema isn't initialized yet, skip.
+    if not _table_exists(db, "users"):
+        return
+
+    cols = {r["name"] for r in db.execute("PRAGMA table_info(users)").fetchall()}
+    if "password_hash" not in cols:
+        db.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+        db.commit()
+
+
+def _ensure_runtime_migrations(db: sqlite3.Connection) -> None:
+    _ensure_users_password_hash_column(db)
 
 
 def get_db():
-    """Use this in your routes instead of the old global get_db()."""
-
     if "db" not in g:
-        g.db = sqlite3.connect(current_app.config["DATABASE_PATH"])
+        db_path = current_app.config["DATABASE_PATH"]
+        g.db = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         g.db.row_factory = sqlite3.Row
+        _ensure_runtime_migrations(g.db)
     return g.db
 
 
+def close_db(_e=None):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
 def query_db(query, args=(), one=False):
-    """Run a SELECT query and return rows (or one row)."""
     cur = get_db().execute(query, args)
     rows = cur.fetchall()
     cur.close()
@@ -41,10 +59,7 @@ def query_db(query, args=(), one=False):
 
 
 def execute_db(query, args=()):
-    """Run INSERT/UPDATE/DELETE and commit. Returns lastrowid."""
     db = get_db()
     cur = db.execute(query, args)
     db.commit()
-    last_id = cur.lastrowid
-    cur.close()
-    return last_id
+    return cur.lastrowid

@@ -5,7 +5,7 @@
   <div class="auth-wrapper">
     <div class="auth-card">
       <h2>Login</h2>
-      <p class="auth-subtitle">Enter your name and phone number.</p>
+      <p class="auth-subtitle">Use your phone number and 6-digit PIN.</p>
 
       {% if error %}
         <p class="auth-note" style="color: var(--red-main); font-weight: 800; margin-top: -14px; margin-bottom: 18px;">
@@ -14,18 +14,9 @@
       {% endif %}
 
       <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
-        <div class="form-group">
-          <label for="name">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            placeholder="Your name"
-            autocomplete="name"
-          >
-        </div>
+        <input type="hidden" name="next" value="{{ next or '' }}">
 
-        <div class="form-group">
+        <div class="form-group" style="text-align:left;">
           <label for="phone">Phone</label>
           <input
             id="phone"
@@ -33,20 +24,30 @@
             type="tel"
             placeholder="Digits only"
             autocomplete="tel"
+            inputmode="numeric"
             required
           >
         </div>
 
-        <button class="auth-btn" type="submit">Continue</button>
+        <div class="form-group" style="text-align:left;">
+          <label for="pin">6-digit PIN</label>
+          <input
+            id="pin"
+            name="pin"
+            type="password"
+            placeholder="••••••"
+            autocomplete="current-password"
+            inputmode="numeric"
+            pattern="\d{6}"
+            maxlength="6"
+            required
+          >
+        </div>
+
+        <button class="auth-btn" type="submit">Sign in</button>
       </form>
 
-      <p class="auth-note">
-        If your phone number is new, an account is created automatically.
-      </p>
-
-      <p class="auth-note">
-        New here? <a href="{{ url_for('auth.signup') }}">Sign up</a>
-      </p>
+      <p class="auth-note">New here? <a href="{{ url_for('auth.signup', next=next) }}">Sign up</a></p>
     </div>
   </div>
 {% endblock %}
