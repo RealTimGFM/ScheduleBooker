@@ -29,12 +29,36 @@
         </span>
       </a>
 
+      {% if session.get("admin_user_id") %}
+      <!-- ADMIN NAV -->
+      <ul class="nav-menu">
+        <li><a href="/admin/services">Services</a></li>
+        <li><a href="/admin/barbers">Barber</a></li>
+        <li><a href="{{ url_for('admin.day') }}">Calendar</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <a class="nav-link" href="{{ url_for('admin.logout') }}">Admin logout</a>
+
+        <button class="theme-toggle icon-only" id="theme-toggle" type="button" aria-label="Toggle theme"
+          title="Toggle theme">
+          🌓
+        </button>
+      </div>
+
+
+      {% else %}
+      <!-- CUSTOMER NAV -->
       <ul class="nav-menu">
         <li><a href="{{ url_for('public.services') }}">Home</a></li>
         <li><a href="{{ url_for('public.services') }}#services">Service</a></li>
+
+        <!-- Keep your working URLs (no BuildError risk) -->
         <li><a href="/about">About Us</a></li>
         <li><a href="/contact">Contact</a></li>
-        <li><a class="nav-link" href="{{ url_for('admin.home') }}">Admin</a></li>
+
+        <!-- Admin now shares exact same structure/CSS as the other nav items -->
+        <li><a href="{{ url_for('admin.home') }}">Admin</a></li>
 
         {% if session.get("user_id") %}
         <li><a href="{{ url_for('appointments.list_appointments') }}">My Appointments</a></li>
@@ -42,21 +66,20 @@
       </ul>
 
       <div class="nav-auth">
-        {% if session.get("admin_user_id") %}
-        <a class="nav-link" href="{{ url_for('admin.logout') }}">Admin logout</a>
-
-        {% elif session.get("user_id") %}
+        {% if session.get("user_id") %}
         <a class="nav-link" href="{{ url_for('appointments.list_appointments') }}">My appointments</a>
         <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
-
         {% else %}
         <a class="nav-link" href="{{ url_for('auth.signup') }}">Sign up</a>
         <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
         {% endif %}
 
-        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">🌓</button>
+        <button class="theme-toggle icon-only" id="theme-toggle" type="button" aria-label="Toggle theme"
+          title="Toggle theme">
+          🌓
+        </button>
       </div>
-
+      {% endif %}
     </div>
   </nav>
 
@@ -88,7 +111,7 @@
   </footer>
 
   <script>
-    // Theme toggle (persists in localStorage)
+    // Theme toggle (persists in localStorage) - icon only
     (function () {
       const key = "sb_theme";
       const saved = localStorage.getItem(key);
@@ -97,25 +120,21 @@
       const btn = document.getElementById("theme-toggle");
       if (!btn) return;
 
-      function updateLabel() {
-        const isDark = document.body.getAttribute("data-theme") === "dark";
-        btn.textContent = isDark ? "Light" : "Dark";
-      }
-      updateLabel();
-
       btn.addEventListener("click", function () {
         const isDark = document.body.getAttribute("data-theme") === "dark";
         if (isDark) {
           document.body.removeAttribute("data-theme");
           localStorage.setItem(key, "light");
+          btn.setAttribute("title", "Switch to dark mode");
         } else {
           document.body.setAttribute("data-theme", "dark");
           localStorage.setItem(key, "dark");
+          btn.setAttribute("title", "Switch to light mode");
         }
-        updateLabel();
       });
     })();
   </script>
+
 
   {% block scripts %}{% endblock %}
 </body>
