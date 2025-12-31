@@ -143,9 +143,7 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
-    row = query_db(
-        "SELECT * FROM admin_users WHERE username = ?", (username,), one=True
-    )
+    row = query_db("SELECT * FROM admin_users WHERE username = ?", (username,), one=True)
     if not row or not check_password_hash(row["password_hash"], password):
         return render_or_json("admin/login.html", error="Invalid username/password")
 
@@ -187,12 +185,8 @@ def day():
         (_iso(start), _iso(end)),
     )
 
-    services = query_db(
-        "SELECT id, name, duration_min, price FROM services ORDER BY id ASC"
-    )
-    barbers = query_db(
-        "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC"
-    )
+    services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+    barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
 
     wk_start = _week_start_monday(selected_day)
     wk_end = wk_start + timedelta(days=7)
@@ -293,9 +287,7 @@ def day():
 @admin_bp.post("/book")
 def create_booking():
     if not require_admin():
-        return redirect(
-            url_for("admin.login", next=request.referrer or url_for("admin.day"))
-        )
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
 
     customer_name = (request.form.get("customer_name") or "").strip()
     customer_phone = (request.form.get("customer_phone") or "").strip()
