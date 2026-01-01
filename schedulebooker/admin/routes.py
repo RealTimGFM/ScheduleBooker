@@ -335,7 +335,10 @@ def create_booking():
     )
 
     return redirect(url_for("admin.day", date=d.isoformat()))
+
+
 # Add these routes to schedulebooker/admin/routes.py (after create_booking)
+
 
 @admin_bp.post("/book/<int:booking_id>/edit")
 def edit_booking(booking_id: int):
