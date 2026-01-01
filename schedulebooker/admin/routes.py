@@ -335,3 +335,80 @@ def create_booking():
     )
 
     return redirect(url_for("admin.day", date=d.isoformat()))
+
+
+# Add these routes to schedulebooker/admin/routes.py (after create_booking)
+
+
+@admin_bp.post("/book/<int:booking_id>/edit")
+def edit_booking(booking_id: int):
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
+
+    booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+    if not booking:
+        return redirect(url_for("admin.day"))
+
+    customer_name = (request.form.get("customer_name") or "").strip()
+    customer_phone = (request.form.get("customer_phone") or "").strip()
+    customer_email = (request.form.get("customer_email") or "").strip()
+    notes = (request.form.get("notes") or "").strip()
+
+    service_id = request.form.get("service_id", type=int)
+    barber_id = request.form.get("barber_id", type=int)
+
+    d = _parse_date(request.form.get("date"))
+    t = _parse_time_hhmm(request.form.get("time"))
+
+    if not (customer_name and service_id and d and t):
+        # Redirect back with original date
+        return redirect(url_for("admin.day", date=booking["start_time"][:10]))
+
+    start_dt = datetime.combine(d, t)
+
+    service = query_db("SELECT * FROM services WHERE id = ?", (service_id,), one=True)
+    duration_min = int(service["duration_min"]) if service else 30
+    end_dt = start_dt + timedelta(minutes=duration_min)
+
+    execute_db(
+        """
+        UPDATE appointments 
+        SET customer_name = ?, customer_phone = ?, customer_email = ?,
+            service_id = ?, barber_id = ?,
+            start_time = ?, end_time = ?,
+            notes = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (
+            customer_name,
+            customer_phone or None,
+            customer_email or None,
+            service_id,
+            barber_id,
+            _iso(start_dt),
+            _iso(end_dt),
+            notes,
+            _iso(datetime.now()),
+            booking_id,
+        ),
+    )
+
+    return redirect(url_for("admin.day", date=d.isoformat()))
+
+
+@admin_bp.post("/book/<int:booking_id>/delete")
+def delete_booking(booking_id: int):
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
+
+    booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+    if not booking:
+        return redirect(url_for("admin.day"))
+
+    # Soft delete
+    execute_db(
+        "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
+        (_iso(datetime.now()), booking_id),
+    )
+
+    return redirect(url_for("admin.day", date=booking["start_time"][:10]))
