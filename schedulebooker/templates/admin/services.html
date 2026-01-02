@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Services · Admin · ScheduleBooker{% endblock %}
+
+{% block content %}
+<section class="page">
+    <div class="admin-toolbar" style="margin-bottom: 16px;">
+        <div class="left">
+            <h1 class="title" style="margin:0;">Services</h1>
+            <span class="subtle">Edit name, price, duration, category, and visibility.</span>
+        </div>
+        <div class="controls">
+            <a class="btn" href="{{ url_for('admin.day') }}">Back to Calendar</a>
+            <a class="btn" href="{{ url_for('admin.services_new') }}">+ New Service</a>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:26%;">Name</th>
+                        <th style="width:14%;">Category</th>
+                        <th style="width:12%;">Duration</th>
+                        <th style="width:14%;">Price</th>
+                        <th style="width:12%;">Popular</th>
+                        <th style="width:10%;">Order</th>
+                        <th style="width:12%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in active_services %}
+                    <tr>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td>{{ s.category }}</td>
+                        <td>{{ s.duration_min }} min</td>
+                        <td>
+                            {% if s.price_is_from %}From {% endif %}
+                            {{ "%.2f"|format(s.price) }}
+                            {% if s.price_label %}<span class="subtle">({{ s.price_label }})</span>{% endif %}
+                        </td>
+                        <td>{% if s.is_popular %}Yes{% else %}No{% endif %}</td>
+                        <td>{{ s.sort_order }}</td>
+                        <td>
+                            <a class="btn btn-outline"
+                                href="{{ url_for('admin.services_edit', service_id=s.id) }}">Edit</a>
+
+                            <form method="post" action="{{ url_for('admin.services_hide', service_id=s.id) }}"
+                                style="display:inline;">
+                                <button class="btn btn-outline" type="submit"
+                                    onclick="return confirm('Hide this service? It will disappear from public lists but past bookings keep the name history via service_id.')">
+                                    Hide
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="subtle">No active services.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="margin-top: 18px;">
+        <details>
+            <summary class="btn btn-outline" style="cursor:pointer;">
+                Hidden Services ({{ hidden_services|length }})
+            </summary>
+
+            <div class="table-wrap" style="margin-top: 12px;">
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:26%;">Name</th>
+                                <th style="width:14%;">Category</th>
+                                <th style="width:12%;">Duration</th>
+                                <th style="width:14%;">Price</th>
+                                <th style="width:12%;">Popular</th>
+                                <th style="width:10%;">Order</th>
+                                <th style="width:12%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in hidden_services %}
+                            <tr>
+                                <td><strong>{{ s.name }}</strong> <span class="badge warn">Hidden</span></td>
+                                <td>{{ s.category }}</td>
+                                <td>{{ s.duration_min }} min</td>
+                                <td>
+                                    {% if s.price_is_from %}From {% endif %}
+                                    {{ "%.2f"|format(s.price) }}
+                                    {% if s.price_label %}<span class="subtle">({{ s.price_label }})</span>{% endif %}
+                                </td>
+                                <td>{% if s.is_popular %}Yes{% else %}No{% endif %}</td>
+                                <td>{{ s.sort_order }}</td>
+                                <td>
+                                    <a class="btn btn-outline"
+                                        href="{{ url_for('admin.services_edit', service_id=s.id) }}">Edit</a>
+
+                                    <form method="post"
+                                        action="{{ url_for('admin.services_restore', service_id=s.id) }}"
+                                        style="display:inline;">
+                                        <button class="btn" type="submit">Restore</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="subtle">No hidden services.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+    </div>
+</section>
+{% endblock %}

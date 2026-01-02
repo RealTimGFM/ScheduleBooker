@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import sqlite3
 import time as pytime
 from datetime import date, datetime, time, timedelta
 
@@ -412,3 +413,259 @@ def delete_booking(booking_id: int):
     )
 
     return redirect(url_for("admin.day", date=booking["start_time"][:10]))
+
+
+# =============================================================================
+# Admin: Services CRUD (with soft-delete via is_active=0)
+# =============================================================================
+
+ALLOWED_SERVICE_CATEGORIES = ("Homme", "Femme", "General")
+
+
+def _service_error_from_code(code: str | None) -> str | None:
+    if not code:
+        return None
+    mapping = {
+        "not_found": "Service not found.",
+        "confirm_required": "Confirmation missing. Action cancelled.",
+        "duplicate_name": "A service with that name already exists.",
+        "invalid_form": "Please correct the highlighted fields.",
+    }
+    return mapping.get(code, "Something went wrong.")
+
+
+def _parse_service_form(form) -> tuple[dict, str | None]:
+    """
+    Returns: (data, error_message)
+    """
+    name = (form.get("name") or "").strip()
+    category = (form.get("category") or "General").strip()
+    if category not in ALLOWED_SERVICE_CATEGORIES:
+        category = "General"
+
+    # numbers
+    try:
+        duration_min = int(form.get("duration_min") or 30)
+    except ValueError:
+        duration_min = -1
+
+    try:
+        price = float(form.get("price") or 0)
+    except ValueError:
+        price = -1
+
+    try:
+        sort_order = int(form.get("sort_order") or 0)
+    except ValueError:
+        sort_order = 0
+
+    # checkboxes
+    price_is_from = 1 if form.get("price_is_from") else 0
+    is_active = 1 if form.get("is_active") else 0
+    is_popular = 1 if form.get("is_popular") else 0
+
+    price_label = (form.get("price_label") or "").strip()
+
+    # basic validation
+    if not name:
+        return {}, "Name is required."
+    if duration_min <= 0:
+        return {}, "Duration must be a positive number."
+    if price < 0:
+        return {}, "Price must be 0 or more."
+
+    data = {
+        "name": name,
+        "category": category,
+        "duration_min": duration_min,
+        "price": price,
+        "price_is_from": price_is_from,
+        "price_label": price_label,
+        "is_active": is_active,
+        "is_popular": is_popular,
+        "sort_order": sort_order,
+    }
+    return data, None
+
+
+@admin_bp.get("/services")
+def services_list():
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    # "Hidden by default": show active services prominently, hidden services collapsed.
+    active = query_db(
+        """
+        SELECT *
+        FROM services
+        WHERE is_active = 1
+        ORDER BY sort_order ASC, name ASC
+        """
+    )
+    hidden = query_db(
+        """
+        SELECT *
+        FROM services
+        WHERE is_active = 0
+        ORDER BY sort_order ASC, name ASC
+        """
+    )
+
+    error = _service_error_from_code(request.args.get("error"))
+    return render_or_json(
+        "admin/services.html",
+        active_services=active,
+        hidden_services=hidden,
+        error=error,
+    )
+
+
+@admin_bp.route("/services/new", methods=["GET", "POST"])
+def services_new():
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    if request.method == "POST":
+        data, err = _parse_service_form(request.form)
+        if err:
+            return render_or_json(
+                "admin/service_form.html",
+                mode="create",
+                service=data,
+                error=err,
+                categories=ALLOWED_SERVICE_CATEGORIES,
+            )
+
+        try:
+            execute_db(
+                """
+                INSERT INTO services
+                  (name, category, duration_min, price, price_is_from, price_label,
+                   is_active, is_popular, sort_order)
+                VALUES
+                  (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    data["name"],
+                    data["category"],
+                    data["duration_min"],
+                    data["price"],
+                    data["price_is_from"],
+                    data["price_label"],
+                    data["is_active"],
+                    data["is_popular"],
+                    data["sort_order"],
+                ),
+            )
+        except sqlite3.IntegrityError:
+            return redirect(url_for("admin.services_list", error="duplicate_name"))
+
+        return redirect(url_for("admin.services_list"))
+
+    # GET defaults
+    service = {
+        "name": "",
+        "category": "General",
+        "duration_min": 30,
+        "price": 0,
+        "price_is_from": 0,
+        "price_label": "",
+        "is_active": 1,
+        "is_popular": 0,
+        "sort_order": 0,
+    }
+    return render_or_json(
+        "admin/service_form.html",
+        mode="create",
+        service=service,
+        categories=ALLOWED_SERVICE_CATEGORIES,
+        error=None,
+    )
+
+
+@admin_bp.route("/services/<int:service_id>/edit", methods=["GET", "POST"])
+def services_edit(service_id: int):
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    svc = query_db("SELECT * FROM services WHERE id = ?", (service_id,), one=True)
+    if not svc:
+        return redirect(url_for("admin.services_list", error="not_found"))
+
+    if request.method == "POST":
+        data, err = _parse_service_form(request.form)
+        if err:
+            # keep id so the form can post correctly
+            data["id"] = service_id
+            return render_or_json(
+                "admin/service_form.html",
+                mode="edit",
+                service=data,
+                categories=ALLOWED_SERVICE_CATEGORIES,
+                error=err,
+            )
+
+        try:
+            execute_db(
+                """
+                UPDATE services
+                SET name=?,
+                    category=?,
+                    duration_min=?,
+                    price=?,
+                    price_is_from=?,
+                    price_label=?,
+                    is_active=?,
+                    is_popular=?,
+                    sort_order=?
+                WHERE id=?
+                """,
+                (
+                    data["name"],
+                    data["category"],
+                    data["duration_min"],
+                    data["price"],
+                    data["price_is_from"],
+                    data["price_label"],
+                    data["is_active"],
+                    data["is_popular"],
+                    data["sort_order"],
+                    service_id,
+                ),
+            )
+        except sqlite3.IntegrityError:
+            return redirect(url_for("admin.services_list", error="duplicate_name"))
+
+        return redirect(url_for("admin.services_list"))
+
+    # GET
+    return render_or_json(
+        "admin/service_form.html",
+        mode="edit",
+        service=svc,
+        categories=ALLOWED_SERVICE_CATEGORIES,
+        error=None,
+    )
+
+
+@admin_bp.post("/services/<int:service_id>/hide")
+def services_hide(service_id: int):
+    if not require_admin():
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
+        )
+
+    # soft delete = hide
+    execute_db("UPDATE services SET is_active = 0 WHERE id = ?", (service_id,))
+    return redirect(url_for("admin.services_list"))
+
+
+@admin_bp.post("/services/<int:service_id>/restore")
+def services_restore(service_id: int):
+    if not require_admin():
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
+        )
+
+    execute_db("UPDATE services SET is_active = 1 WHERE id = ?", (service_id,))
+    return redirect(url_for("admin.services_list"))
