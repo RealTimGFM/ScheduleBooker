@@ -1,6 +1,7 @@
 from __future__ import annotations
-import sqlite3
+
 import secrets
+import sqlite3
 import time as pytime
 from datetime import date, datetime, time, timedelta
 
@@ -413,6 +414,7 @@ def delete_booking(booking_id: int):
 
     return redirect(url_for("admin.day", date=booking["start_time"][:10]))
 
+
 # =============================================================================
 # Admin: Services CRUD (with soft-delete via is_active=0)
 # =============================================================================
@@ -649,7 +651,9 @@ def services_edit(service_id: int):
 @admin_bp.post("/services/<int:service_id>/hide")
 def services_hide(service_id: int):
     if not require_admin():
-        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.services_list")))
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
+        )
 
     # soft delete = hide
     execute_db("UPDATE services SET is_active = 0 WHERE id = ?", (service_id,))
@@ -659,7 +663,9 @@ def services_hide(service_id: int):
 @admin_bp.post("/services/<int:service_id>/restore")
 def services_restore(service_id: int):
     if not require_admin():
-        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.services_list")))
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
+        )
 
     execute_db("UPDATE services SET is_active = 1 WHERE id = ?", (service_id,))
     return redirect(url_for("admin.services_list"))
