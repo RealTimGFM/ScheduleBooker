@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == "edit" %}Edit Service · Admin · ScheduleBooker{% else %}New Service · Admin · ScheduleBooker{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="page">
+    <div class="admin-toolbar" style="margin-bottom: 16px;">
+        <div class="left">
+            <h1 class="title" style="margin:0;">
+                {% if mode == "edit" %}Edit Service{% else %}New Service{% endif %}
+            </h1>
+            <span class="subtle">Changes apply immediately. Past bookings show the updated service name
+                automatically.</span>
+        </div>
+        <div class="controls">
+            <a class="btn btn-outline" href="{{ url_for('admin.services_list') }}">Back</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <form method="post">
+            <div class="form-grid" style="margin-top: 0;">
+                <div class="field">
+                    <label for="name">Name</label>
+                    <input id="name" name="name" type="text" value="{{ service.name or '' }}" required />
+                </div>
+
+                <div class="field">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        {% for c in categories %}
+                        <option value="{{ c }}" {% if service.category==c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="duration_min">Duration (minutes)</label>
+                    <input id="duration_min" name="duration_min" type="number" min="1"
+                        value="{{ service.duration_min or 30 }}" required />
+                </div>
+
+                <div class="field">
+                    <label for="price">Price</label>
+                    <input id="price" name="price" type="number" step="0.01" min="0"
+                        value="{{ service.price if service.price is not none else 0 }}" required />
+                </div>
+
+                <div class="field">
+                    <label style="display:flex;gap:10px;align-items:center;margin-top:26px;">
+                        <input type="checkbox" name="price_is_from" {% if service.price_is_from %}checked{% endif %} />
+                        Price is “From”
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label for="price_label">Price label (optional)</label>
+                    <input id="price_label" name="price_label" type="text" value="{{ service.price_label or '' }}"
+                        placeholder="e.g., + tax, starting at..." />
+                </div>
+
+                <div class="field">
+                    <label style="display:flex;gap:10px;align-items:center;margin-top:26px;">
+                        <input type="checkbox" name="is_popular" {% if service.is_popular %}checked{% endif %} />
+                        Mark as popular
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label style="display:flex;gap:10px;align-items:center;margin-top:26px;">
+                        <input type="checkbox" name="is_active" {% if service.is_active %}checked{% endif %} />
+                        Active (visible to customers)
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label for="sort_order">Sort order</label>
+                    <input id="sort_order" name="sort_order" type="number" value="{{ service.sort_order or 0 }}" />
+                </div>
+            </div>
+
+            <div style="margin-top: 14px; display:flex; gap:10px; align-items:center;">
+                <button class="btn" type="submit">
+                    {% if mode == "edit" %}Save Changes{% else %}Create Service{% endif %}
+                </button>
+
+                <a class="btn btn-outline" href="{{ url_for('admin.services_list') }}">Cancel</a>
+
+                {% if mode == "edit" %}
+                {% if service.is_active %}
+                <form method="post" action="{{ url_for('admin.services_hide', service_id=service.id) }}"
+                    style="margin-left:auto;">
+                    <button class="btn btn-outline" type="submit"
+                        onclick="return confirm('Hide this service? (Soft delete)')">
+                        Hide
+                    </button>
+                </form>
+                {% else %}
+                <form method="post" action="{{ url_for('admin.services_restore', service_id=service.id) }}"
+                    style="margin-left:auto;">
+                    <button class="btn" type="submit">Restore</button>
+                </form>
+                {% endif %}
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
