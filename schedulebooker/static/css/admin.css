@@ -1148,7 +1148,8 @@ hr {
    ========================================================= */
 
 :root {
-  --tap-size-admin: 52px; /* slightly bigger in admin */
+  --tap-size-admin: 52px;
+  /* slightly bigger in admin */
   --focus-ring-admin: 0 0 0 3px rgba(201, 162, 77, 0.60);
 }
 
@@ -1210,4 +1211,149 @@ textarea {
 :where(a, button, input, select, textarea):focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-admin);
+}
+
+/* ==========================================================================
+   Admin Services UI polish (big targets, clean layout)
+   ========================================================================== */
+
+.services-alert {
+  background: rgba(211, 47, 47, 0.10);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin: 12px 0 18px;
+}
+
+.services-card {
+  margin-bottom: 18px;
+}
+
+.services-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.services-table-scroll {
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.services-table th,
+.services-table td {
+  padding: 14px 12px;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+.services-td-strong {
+  font-weight: 800;
+}
+
+.services-th-actions {
+  width: 240px;
+}
+
+.services-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.services-inline-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.services-details {
+  margin-top: 12px;
+}
+
+.services-toggle {
+  margin-top: 10px;
+}
+
+/* Bigger checkbox row (easy clicks) */
+.services-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.services-check input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
+
+/* Form card */
+.services-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  max-width: 980px;
+}
+
+.services-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .services-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.services-field label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.services-field input,
+.services-field select {
+  width: 100%;
+}
+
+.services-field-full {
+  grid-column: 1 / -1;
+}
+
+.services-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.services-form-actions-secondary {
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* “Danger outline” for Hide */
+.btn-danger {
+  border-color: rgba(211, 47, 47, 0.55) !important;
+  color: #ff6b6b !important;
+}
+
+.btn-danger:hover {
+  background: rgba(211, 47, 47, 0.12) !important;
 }
