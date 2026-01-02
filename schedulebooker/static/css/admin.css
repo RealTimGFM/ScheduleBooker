@@ -1141,3 +1141,73 @@ hr {
   background: var(--red-main);
   color: #fff;
 }
+
+/* =========================================================
+   Admin: extra-large controls for easy clicking
+   Paste at END of schedulebooker/static/css/admin.css
+   ========================================================= */
+
+:root {
+  --tap-size-admin: 52px; /* slightly bigger in admin */
+  --focus-ring-admin: 0 0 0 3px rgba(201, 162, 77, 0.60);
+}
+
+/* Bigger admin nav links (admin menu links are plain <a>) */
+.nav-menu li a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-size-admin);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.nav-menu li a:hover,
+.nav-menu li a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-admin);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Bigger calendar/view controls + all admin buttons */
+.controls button,
+.btn,
+.nav-auth button,
+a.btn {
+  min-height: var(--tap-size-admin);
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-size: 18px;
+}
+
+/* Bigger form fields in admin CRUD pages */
+input,
+select,
+textarea {
+  min-height: var(--tap-size-admin);
+  font-size: 18px;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+/* Bigger tables (services list, etc.) */
+.table th,
+.table td {
+  padding: 14px 12px;
+  font-size: 16px;
+}
+
+/* Make any icon buttons easier (modal close, etc.) */
+.icon-btn {
+  width: var(--tap-size-admin);
+  height: var(--tap-size-admin);
+  border-radius: 999px;
+}
+
+/* Strong focus ring everywhere in admin */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-admin);
+}
