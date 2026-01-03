@@ -92,8 +92,20 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
         <div class="avatar">PHONE</div>
         <div>
           <h4>Phone</h4>
+          <p class="small"><a href="tel:+15142773585">(514) 277-3585</a></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div class="avatar">ADDRESS</div>
+        <div>
+          <h4>Address</h4>
           <p class="small">
-            <a href="tel:+15142773585">(514) 277-3585</a>
+            <a href="https://maps.google.com/?q=29B+Av+Shamrock,+Montr%C3%A9al,+QC+H2S+1A3">
+              29B Av. Shamrock, Montréal, QC H2S 1A3
+            </a>
           </p>
         </div>
       </div>
@@ -101,11 +113,11 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 
     <div class="card">
       <div class="card-top">
-        <div class="avatar">EMAIL</div>
+        <div class="avatar">HOURS</div>
         <div>
-          <h4>Email</h4>
-          <p class="small">Update this in <code>templates/public/services.html</code></p>
-          <p><strong>TBD</strong></p>
+          <h4>Hours</h4>
+          <p class="small">Tue–Sun 11:00–19:00</p>
+          <p class="small">Mon: Closed</p>
         </div>
       </div>
     </div>
