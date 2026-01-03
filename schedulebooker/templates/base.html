@@ -95,21 +95,31 @@
   <footer class="footer" id="footer">
     <div class="footer-container">
       <div>
-        <h4>ScheduleBooker</h4>
-        <p class="footer-copy">Simple booking flow for a small shop.</p>
+        <h4>Sonthien Coiffure</h4>
+        <p class="footer-copy">Unisex hair salon in Montréal.</p>
+        <p class="footer-copy">
+          <a href="tel:+15142773585">(514) 277-3585</a>
+        </p>
+        <p class="footer-copy">29B Avenue Shamrock, Montréal, QC H2S 1A3</p>
       </div>
+
       <div>
         <h4>Links</h4>
         <p class="footer-copy"><a href="{{ url_for('public.services') }}">Services</a></p>
-        <p class="footer-copy"><a href="{{ url_for('public.find_booking_page') }}">Find booking</a></p>
+        <p class="footer-copy"><a href="/about">About</a></p>
+        <p class="footer-copy"><a href="/contact">Contact</a></p>
+        <p class="footer-copy"><a href="{{ url_for('public.find_booking_page') }}">Find / Cancel booking</a></p>
       </div>
+
       <div>
         <h4>Hours</h4>
         <p class="footer-copy">Tuesday–Sunday: 11:00–19:00</p>
         <p class="footer-copy">Closed Monday</p>
+        <p class="footer-copy" style="opacity:.9">Hours may vary—call to confirm.</p>
       </div>
     </div>
   </footer>
+
 
   <script>
     // Theme toggle (persists in localStorage) - icon only
