@@ -34,6 +34,7 @@ def _ensure_users_password_hash_column(db: sqlite3.Connection) -> None:
 
 def _ensure_runtime_migrations(db: sqlite3.Connection) -> None:
     _ensure_users_password_hash_column(db)
+    _ensure_barbers_phone_column(db)
 
 
 def get_db():
@@ -63,3 +64,13 @@ def execute_db(query, args=()):
     cur = db.execute(query, args)
     db.commit()
     return cur.lastrowid
+
+
+def _ensure_barbers_phone_column(db: sqlite3.Connection) -> None:
+    if not _table_exists(db, "barbers"):
+        return
+
+    cols = {r["name"] for r in db.execute("PRAGMA table_info(barbers)").fetchall()}
+    if "phone" not in cols:
+        db.execute("ALTER TABLE barbers ADD COLUMN phone TEXT NOT NULL DEFAULT ''")
+        db.commit()

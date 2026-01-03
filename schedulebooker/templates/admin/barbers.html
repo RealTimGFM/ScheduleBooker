@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Barbers · Admin · ScheduleBooker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="admin-toolbar">
+        <div>
+            <h1 class="admin-title">Barbers</h1>
+            <p class="admin-subtitle">Manage barbers: name, phone, and visibility.</p>
+        </div>
+
+        <div class="admin-toolbar-right">
+            <a class="btn btn-outline" href="{{ url_for('admin.day') }}">Back to Calendar</a>
+            <a class="btn" href="{{ url_for('admin.barbers_new') }}">+ New Barber</a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="barbers-alert">{{ error }}</div>
+    {% endif %}
+
+    <div class="table-card barbers-card">
+        <div class="barbers-card-header">
+            <h3 style="margin:0;">Active barbers</h3>
+            <span class="muted">Available for bookings</span>
+        </div>
+
+        <div class="barbers-table-scroll">
+            <table class="barbers-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th class="barbers-th-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in active_barbers %}
+                    <tr>
+                        <td class="barbers-td-strong">{{ b.name }}</td>
+                        <td>{{ b.phone }}</td>
+                        <td>
+                            <div class="barbers-actions">
+                                <a class="btn btn-outline" href="{{ url_for('admin.barbers_edit', barber_id=b.id) }}">
+                                    Edit
+                                </a>
+
+                                <form class="barbers-inline-form" method="post"
+                                    action="{{ url_for('admin.barbers_hide', barber_id=b.id) }}">
+                                    <button class="btn btn-outline btn-danger" type="submit"
+                                        onclick="return confirm('Hide this barber? They will be unavailable for new bookings.')">
+                                        Hide
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="muted">No active barbers.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <details class="barbers-details">
+        <summary class="btn btn-outline barbers-toggle">
+            Hidden barbers ({{ hidden_barbers|length }})
+        </summary>
+
+        <div class="table-card barbers-card" style="margin-top:12px;">
+            <div class="barbers-card-header">
+                <h3 style="margin:0;">Hidden barbers</h3>
+                <span class="muted">Not available for bookings</span>
+            </div>
+
+            <div class="barbers-table-scroll">
+                <table class="barbers-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th class="barbers-th-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in hidden_barbers %}
+                        <tr>
+                            <td class="barbers-td-strong">
+                                {{ b.name }} <span class="pill bad" style="margin-left:8px;">Hidden</span>
+                            </td>
+                            <td>{{ b.phone }}</td>
+                            <td>
+                                <div class="barbers-actions">
+                                    <a class="btn btn-outline"
+                                        href="{{ url_for('admin.barbers_edit', barber_id=b.id) }}">
+                                        Edit
+                                    </a>
+
+                                    <form class="barbers-inline-form" method="post"
+                                        action="{{ url_for('admin.barbers_restore', barber_id=b.id) }}">
+                                        <button class="btn" type="submit">Restore</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="muted">No hidden barbers.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </details>
+</div>
+{% endblock %}

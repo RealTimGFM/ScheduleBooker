@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == "edit" %}Edit Barber · Admin · ScheduleBooker{% else %}New Barber · Admin · ScheduleBooker{% endif %}
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="admin-toolbar">
+        <div>
+            <h1 class="admin-title">
+                {% if mode == "edit" %}Edit Barber{% else %}New Barber{% endif %}
+            </h1>
+            <p class="admin-subtitle">Name and phone are required. Active barbers appear in booking forms.</p>
+        </div>
+
+        <div class="admin-toolbar-right">
+            <a class="btn btn-outline" href="{{ url_for('admin.barbers_list') }}">Back</a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="barbers-alert">{{ error }}</div>
+    {% endif %}
+
+    <div class="barbers-form-card">
+        <form method="post">
+            <div class="barbers-form-grid">
+                <div class="barbers-field">
+                    <label for="name">Name</label>
+                    <input id="name" name="name" type="text" value="{{ barber.name or '' }}" required>
+                </div>
+
+                <div class="barbers-field">
+                    <label for="phone">Phone</label>
+                    <input id="phone" name="phone" type="tel" value="{{ barber.phone or '' }}" 
+                           placeholder="e.g., 5141234567" required>
+                </div>
+
+                <div class="barbers-field barbers-field-full">
+                    <label class="barbers-check">
+                        <input type="checkbox" name="is_active" {% if barber.is_active %}checked{% endif %}>
+                        <span>Active (available for bookings)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="barbers-form-actions">
+                <button class="btn" type="submit">
+                    {% if mode == "edit" %}Save Changes{% else %}Create Barber{% endif %}
+                </button>
+
+                <a class="btn btn-outline" href="{{ url_for('admin.barbers_list') }}">Cancel</a>
+            </div>
+        </form>
+
+        {% if mode == "edit" %}
+        <div class="barbers-form-actions barbers-form-actions-secondary">
+            {% if barber.is_active %}
+            <form class="barbers-inline-form" method="post"
+                action="{{ url_for('admin.barbers_hide', barber_id=barber.id) }}">
+                <button class="btn btn-outline btn-danger" type="submit"
+                    onclick="return confirm('Hide this barber? They will be unavailable for new bookings.')">
+                    Hide
+                </button>
+            </form>
+            {% else %}
+            <form class="barbers-inline-form" method="post"
+                action="{{ url_for('admin.barbers_restore', barber_id=barber.id) }}">
+                <button class="btn" type="submit">Restore</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

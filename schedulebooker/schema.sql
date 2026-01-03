@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS services (
 CREATE TABLE IF NOT EXISTS barbers (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     name       TEXT NOT NULL UNIQUE,
+    phone      TEXT NOT NULL,
     is_active  INTEGER NOT NULL DEFAULT 1
 );
 

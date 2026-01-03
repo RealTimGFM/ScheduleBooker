@@ -1357,3 +1357,138 @@ textarea {
 .btn-danger:hover {
   background: rgba(211, 47, 47, 0.12) !important;
 }
+
+/* ==========================================================================
+   Admin Barbers UI (matches Services pattern)
+   ========================================================================== */
+
+.barbers-alert {
+  background: rgba(211, 47, 47, 0.10);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin: 12px 0 18px;
+}
+
+.barbers-card {
+  margin-bottom: 18px;
+}
+
+.barbers-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.barbers-table-scroll {
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.barbers-table th,
+.barbers-table td {
+  padding: 14px 12px;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+.barbers-td-strong {
+  font-weight: 800;
+}
+
+.barbers-th-actions {
+  width: 240px;
+}
+
+.barbers-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.barbers-inline-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.barbers-details {
+  margin-top: 12px;
+}
+
+.barbers-toggle {
+  margin-top: 10px;
+}
+
+/* Bigger checkbox row */
+.barbers-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.barbers-check input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
+
+/* Form card */
+.barbers-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  max-width: 980px;
+}
+
+.barbers-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .barbers-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.barbers-field label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.barbers-field input,
+.barbers-field select {
+  width: 100%;
+}
+
+.barbers-field-full {
+  grid-column: 1 / -1;
+}
+
+.barbers-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.barbers-form-actions-secondary {
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
