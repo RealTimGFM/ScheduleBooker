@@ -1492,3 +1492,149 @@ textarea {
   padding-top: 12px;
   border-top: 1px solid var(--border-soft);
 }
+
+/* ==========================================================================
+   Admin Settings UI
+   ========================================================================== */
+
+.settings-alert {
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.settings-alert-error {
+  background: rgba(211, 47, 47, 0.10);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+  color: var(--text);
+}
+
+.settings-alert-success {
+  background: rgba(46, 125, 50, 0.10);
+  border: 1px solid rgba(46, 125, 50, 0.25);
+  color: var(--text);
+}
+
+.settings-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 26px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.settings-card-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-card-header h2 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+}
+
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 720px) {
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-field label {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.settings-field input,
+.settings-field select {
+  min-height: 52px;
+  font-size: 18px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  outline: none;
+  border-color: var(--red-main);
+}
+
+.settings-field-full {
+  grid-column: 1 / -1;
+}
+
+.settings-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-main);
+  user-select: none;
+}
+
+.settings-check input[type="checkbox"],
+.settings-check input[type="radio"] {
+  width: 22px;
+  height: 22px;
+  min-height: auto;
+}
+
+.settings-reset-info {
+  padding: 16px;
+  background: var(--bg-main);
+  border-radius: 12px;
+}
+
+.settings-reset-info p {
+  margin: 0 0 8px 0;
+}
+
+.settings-reset-info p:last-child {
+  margin-bottom: 0;
+}
+
+/* Settings icon in navbar */
+.nav-settings-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-size-admin);
+  min-width: var(--tap-size-admin);
+  padding: 10px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-settings-icon:hover,
+.nav-settings-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-admin);
+  background: rgba(255, 255, 255, 0.14);
+}

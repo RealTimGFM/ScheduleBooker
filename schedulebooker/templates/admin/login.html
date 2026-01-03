@@ -7,6 +7,12 @@
     <h2>Admin Login</h2>
     <p class="auth-subtitle">Sign in to manage daily bookings.</p>
 
+    {% if reset_success %}
+    <p class="auth-note" style="color: var(--gold-warm); font-weight: 800; margin-top: -14px; margin-bottom: 18px;">
+      ✓ Password reset successful! You can now log in with your new password.
+    </p>
+    {% endif %}
+
     <form class="auth-form" method="post" action="{{ url_for('admin.login') }}">
       <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
       <div class="form-group" style="text-align:left;">
@@ -21,6 +27,10 @@
 
       <button class="auth-btn" type="submit">Login</button>
     </form>
+
+    <p class="auth-note">
+      <a href="{{ url_for('admin.forgot_password') }}" style="color: var(--gold-warm); font-weight: 700;">Forgot password?</a>
+    </p>
 
     <p class="auth-note">
       This is separate from customer phone + PIN login.

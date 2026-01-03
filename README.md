@@ -60,6 +60,34 @@ This project includes GitHub Actions that automatically run checks when code is 
 - If you’re running locally, you can start with the default setup.
 - For hosting, connect it to a real database (like PostgreSQL) so data is stable long-term.
 
+### Email Configuration (EmailJS)
+
+This app uses EmailJS for password reset emails.
+
+#### Setup:
+1. Create free account at https://www.emailjs.com/
+2. Add an email service (Gmail recommended)
+3. Create email template with these variables:
+   - `{{to_email}}` - Recipient email
+   - `{{to_name}}` - Admin username
+   - `{{reset_url}}` - Password reset link
+4. Copy your credentials to `.env`:
+```
+   EMAILJS_PUBLIC_KEY=your_key
+   EMAILJS_SERVICE_ID=your_service
+   EMAILJS_TEMPLATE_ID=your_template
+```
+
+#### Development Mode:
+- Reset emails are logged to console
+- Copy the reset URL from console logs
+- No actual emails are sent
+
+#### Production Mode:
+- Configure EmailJS credentials in `.env`
+- Emails are sent via EmailJS API
+- Rate limited to prevent abuse
+
 ## Members
 - TimGFM
 - TriBo

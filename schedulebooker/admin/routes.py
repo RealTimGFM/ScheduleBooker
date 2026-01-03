@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import secrets
 import sqlite3
 import time as pytime
@@ -7,7 +8,10 @@ from datetime import date, datetime, time, timedelta
 
 from flask import jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
-from werkzeug.security import check_password_hash
+from werkzeug.security import (
+    check_password_hash,
+    generate_password_hash,
+)  # Add generate_password_hash here
 
 from ..sqlite_db import execute_db, query_db
 from . import admin_bp
@@ -120,6 +124,130 @@ def _week_start_monday(d: date) -> date:
     return d - timedelta(days=d.weekday())  # Monday=0
 
 
+# =============================================================================
+# Admin Settings: Password Reset & Profile Management
+# =============================================================================
+
+RESET_TOKEN_EXPIRY_MINUTES = 15
+RESET_CODE_LENGTH = 6
+RESET_COOLDOWN_SECONDS = 60  # 1 minute between sends
+MAX_RESET_ATTEMPTS = 5
+
+
+def _hash_token(token: str) -> str:
+    """Hash a reset token/code for storage."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _generate_reset_code() -> str:
+    """Generate a 6-digit numeric code."""
+    return "".join(str(secrets.randbelow(10)) for _ in range(RESET_CODE_LENGTH))
+
+
+def _generate_reset_token() -> str:
+    """Generate a secure URL-safe token."""
+    return secrets.token_urlsafe(32)
+
+
+def _send_reset_email(email: str, token: str, admin_username: str) -> dict:
+    """
+    Prepare email data for EmailJS.
+    Returns a dict with email parameters that the frontend will send via EmailJS.
+
+    In production: Frontend calls EmailJS API with this data.
+    In dev: We log it to console.
+    """
+
+    # Build reset URL (use request context if available, otherwise use config)
+    try:
+        reset_url = url_for("admin.reset_password", token=token, _external=True)
+    except RuntimeError:
+        # Fallback if outside request context
+        reset_url = f"/admin/reset?token={token}"
+
+    email_data = {
+        "to_email": email,
+        "to_name": admin_username,
+        "subject": "Password Reset Request - ScheduleBooker Admin",
+        "message": f"Click the link below to reset your password:\n\n{reset_url}\n\nThis link expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this, please ignore this email.",
+        "reset_url": reset_url,
+        "expires_minutes": RESET_TOKEN_EXPIRY_MINUTES,
+    }
+
+    # DEV MODE: Log to console
+    print("\n" + "=" * 60)
+    print("PASSWORD RESET EMAIL (EmailJS Data)")
+    print("=" * 60)
+    print(f"To: {email_data['to_email']}")
+    print(f"Subject: {email_data['subject']}")
+    print(f"Reset URL: {email_data['reset_url']}")
+    print(f"Expires in: {email_data['expires_minutes']} minutes")
+    print("=" * 60 + "\n")
+
+    return email_data
+
+
+def _send_reset_sms(phone: str, code: str, admin_username: str) -> dict:
+    """
+    Prepare SMS data (we'll send as email since we're not using Twilio).
+    Returns a dict with the code for display or email delivery.
+
+    Alternative: Use an SMS gateway email (e.g., phonenumber@carrier.com)
+    """
+
+    sms_data = {
+        "phone": phone,
+        "code": code,
+        "username": admin_username,
+        "message": f"Your ScheduleBooker admin password reset code is: {code}\n\nThis code expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes.",
+    }
+
+    # DEV MODE: Log to console
+    print("\n" + "=" * 60)
+    print("PASSWORD RESET SMS (Code)")
+    print("=" * 60)
+    print(f"To: {sms_data['phone']}")
+    print(f"Username: {sms_data['username']}")
+    print(f"Code: {sms_data['code']}")
+    print(f"Expires in: {RESET_TOKEN_EXPIRY_MINUTES} minutes")
+    print("=" * 60 + "\n")
+
+    return sms_data
+
+
+def _check_rate_limit(admin_id: int, channel: str) -> tuple[bool, int]:
+    """
+    Check if admin can send another reset. Returns (can_send, seconds_remaining).
+    """
+    row = query_db(
+        "SELECT last_sent_at FROM admin_reset_rate_limits WHERE admin_user_id = ? AND channel = ?",
+        (admin_id, channel),
+        one=True,
+    )
+
+    if not row:
+        return True, 0
+
+    last_sent = datetime.fromisoformat(row["last_sent_at"])
+    elapsed = (datetime.now() - last_sent).total_seconds()
+
+    if elapsed < RESET_COOLDOWN_SECONDS:
+        return False, int(RESET_COOLDOWN_SECONDS - elapsed)
+
+    return True, 0
+
+
+def _update_rate_limit(admin_id: int, channel: str):
+    """Update the last sent timestamp for rate limiting."""
+    now = _iso(datetime.now())
+
+    execute_db(
+        "INSERT OR REPLACE INTO admin_reset_rate_limits "
+        "(admin_user_id, channel, last_sent_at) VALUES (?, ?, ?)",
+        (admin_id, channel, now),
+    )
+
+
 @admin_bp.get("/")
 def home():
     """Navbar entry point: if not logged in, go to admin login; else go to admin calendar."""
@@ -136,7 +264,8 @@ def logout():
 
 @admin_bp.get("/login")
 def login():
-    return render_or_json("admin/login.html", error=None)
+    reset_success = request.args.get("reset") == "success"
+    return render_or_json("admin/login.html", error=None, reset_success=reset_success)
 
 
 @admin_bp.post("/login")
@@ -826,3 +955,348 @@ def barbers_restore(barber_id: int):
 
     execute_db("UPDATE barbers SET is_active = 1 WHERE id = ?", (barber_id,))
     return redirect(url_for("admin.barbers_list"))
+
+
+# =============================================================================
+# Admin Settings Routes
+# =============================================================================
+
+
+@admin_bp.get("/settings")
+def settings():
+    """Admin settings page: profile + password management."""
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    admin_id = session.get("admin_user_id")
+    admin = query_db(
+        "SELECT id, username, email, phone FROM admin_users WHERE id = ?",
+        (admin_id,),
+        one=True,
+    )
+
+    if not admin:
+        _clear_admin_session()
+        return redirect(url_for("admin.login"))
+
+    return render_or_json("admin/settings.html", admin=dict(admin), error=None, success=None)
+
+
+@admin_bp.post("/settings/profile")
+def update_profile():
+    """Update admin profile (username, email, phone)."""
+    if not require_admin():
+        return redirect(url_for("admin.login", next=url_for("admin.settings")))
+
+    admin_id = session.get("admin_user_id")
+    admin = query_db("SELECT * FROM admin_users WHERE id = ?", (admin_id,), one=True)
+
+    if not admin:
+        _clear_admin_session()
+        return redirect(url_for("admin.login"))
+
+    # Get form data
+    username = (request.form.get("username") or "").strip()
+    email = (request.form.get("email") or "").strip().lower() or None
+    phone = (request.form.get("phone") or "").strip() or None
+    current_password = request.form.get("current_password") or ""
+
+    # Validate
+    if not username:
+        return render_or_json(
+            "admin/settings.html",
+            admin=dict(admin),
+            error="Username is required.",
+            success=None,
+        )
+
+    # Require current password for security
+    if not check_password_hash(admin["password_hash"], current_password):
+        return render_or_json(
+            "admin/settings.html",
+            admin=dict(admin),
+            error="Current password is incorrect.",
+            success=None,
+        )
+
+    # Check username uniqueness (if changed)
+    if username != admin["username"]:
+        existing = query_db(
+            "SELECT id FROM admin_users WHERE username = ? AND id != ?",
+            (username, admin_id),
+            one=True,
+        )
+        if existing:
+            return render_or_json(
+                "admin/settings.html",
+                admin=dict(admin),
+                error="Username already taken.",
+                success=None,
+            )
+
+    # Update
+    execute_db(
+        "UPDATE admin_users SET username = ?, email = ?, phone = ? WHERE id = ?",
+        (username, email, phone, admin_id),
+    )
+
+    # Fetch updated data
+    updated_admin = query_db(
+        "SELECT id, username, email, phone FROM admin_users WHERE id = ?",
+        (admin_id,),
+        one=True,
+    )
+
+    return render_or_json(
+        "admin/settings.html",
+        admin=dict(updated_admin),
+        error=None,
+        success="Profile updated successfully.",
+    )
+
+
+@admin_bp.post("/settings/password")
+def change_password():
+    """Change admin password (requires current password)."""
+    if not require_admin():
+        return redirect(url_for("admin.login", next=url_for("admin.settings")))
+
+    admin_id = session.get("admin_user_id")
+    admin = query_db("SELECT * FROM admin_users WHERE id = ?", (admin_id,), one=True)
+
+    if not admin:
+        _clear_admin_session()
+        return redirect(url_for("admin.login"))
+
+    current_password = request.form.get("current_password") or ""
+    new_password = request.form.get("new_password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+
+    # Validate current password
+    if not check_password_hash(admin["password_hash"], current_password):
+        return render_or_json(
+            "admin/settings.html",
+            admin=dict(admin),
+            error="Current password is incorrect.",
+            success=None,
+        )
+
+    # Validate new password
+    if len(new_password) < 8:
+        return render_or_json(
+            "admin/settings.html",
+            admin=dict(admin),
+            error="New password must be at least 8 characters.",
+            success=None,
+        )
+
+    if new_password != confirm_password:
+        return render_or_json(
+            "admin/settings.html",
+            admin=dict(admin),
+            error="New passwords do not match.",
+            success=None,
+        )
+
+    # Update password
+    new_hash = generate_password_hash(new_password)
+    execute_db("UPDATE admin_users SET password_hash = ? WHERE id = ?", (new_hash, admin_id))
+
+    # Fetch fresh admin data
+    updated_admin = query_db(
+        "SELECT id, username, email, phone FROM admin_users WHERE id = ?",
+        (admin_id,),
+        one=True,
+    )
+
+    return render_or_json(
+        "admin/settings.html",
+        admin=dict(updated_admin),
+        error=None,
+        success="Password changed successfully.",
+    )
+
+
+@admin_bp.route("/forgot", methods=["GET", "POST"])
+def forgot_password():
+    """Forgot password entry point - choose email or SMS."""
+    if request.method == "GET":
+        return render_or_json("admin/forgot_password.html", error=None, success=None)
+
+    # POST: send reset code/link
+    identifier = (request.form.get("identifier") or "").strip().lower()
+    channel = request.form.get("channel")  # 'email' or 'sms'
+
+    if not identifier or channel not in ("email", "sms"):
+        return render_or_json(
+            "admin/forgot_password.html",
+            error="Please provide your email or phone and select a reset method.",
+            success=None,
+        )
+
+    # Find admin by email or phone
+    if channel == "email":
+        admin = query_db(
+            "SELECT * FROM admin_users WHERE LOWER(email) = ?", (identifier,), one=True
+        )
+    else:  # sms
+        admin = query_db("SELECT * FROM admin_users WHERE phone = ?", (identifier,), one=True)
+
+    # Always show success to prevent user enumeration
+    if not admin:
+        return render_or_json(
+            "admin/forgot_password.html",
+            error=None,
+            success=f"If an account exists, a reset {channel} has been sent.",
+        )
+
+    admin_id = admin["id"]
+    admin_username = admin["username"]
+
+    # Check rate limit
+    can_send, wait_seconds = _check_rate_limit(admin_id, channel)
+    if not can_send:
+        return render_or_json(
+            "admin/forgot_password.html",
+            error=f"Please wait {wait_seconds} seconds before requesting another reset.",
+            success=None,
+        )
+
+    # Generate token/code
+    if channel == "email":
+        token = _generate_reset_token()
+        token_hash = _hash_token(token)
+    else:  # sms
+        token = _generate_reset_code()
+        token_hash = _hash_token(token)
+
+    # Store reset token
+    expires_at = _iso(datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES))
+    execute_db(
+        "INSERT INTO admin_password_resets "
+        "(admin_user_id, token_hash, channel, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (admin_id, token_hash, channel, expires_at, _iso(datetime.now())),
+    )
+
+    # Prepare email/sms data (logged to console in dev)
+    if channel == "email":
+        _send_reset_email(admin["email"], token, admin_username)
+        # email_data = _send_reset_email(admin["email"], token, admin_username)
+        # In production with EmailJS, you'd return this data to frontend
+        # For now, it's logged to console
+    else:
+        _send_reset_sms(admin["phone"], token, admin_username)
+        # sms_data = _send_reset_sms(admin["phone"], token, admin_username)
+        # SMS code is logged to console
+
+    # Update rate limit
+    _update_rate_limit(admin_id, channel)
+
+    success_msg = f"Reset {channel} sent! "
+    if channel == "email":
+        success_msg += "Check your email for the reset link."
+    else:
+        success_msg += "Check the console/logs for your 6-digit code."
+
+    return render_or_json("admin/forgot_password.html", error=None, success=success_msg)
+
+
+@admin_bp.route("/reset", methods=["GET", "POST"])
+def reset_password():
+    """Reset password with token/code."""
+    token_from_url = request.args.get("token")  # For email links
+
+    if request.method == "GET":
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_from_url or "",
+            error=None,
+            success=None,
+        )
+
+    # POST: verify token and set new password
+    token_input = (request.form.get("token") or "").strip()
+    new_password = request.form.get("new_password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+
+    if not token_input:
+        return render_or_json(
+            "admin/reset_password.html",
+            token="",
+            error="Reset code/token is required.",
+            success=None,
+        )
+
+    # Validate new password
+    if len(new_password) < 8:
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_input,
+            error="Password must be at least 8 characters.",
+            success=None,
+        )
+
+    if new_password != confirm_password:
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_input,
+            error="Passwords do not match.",
+            success=None,
+        )
+
+    # Find reset token
+    token_hash = _hash_token(token_input)
+    reset = query_db(
+        "SELECT * FROM admin_password_resets WHERE token_hash = ? AND used_at IS NULL",
+        (token_hash,),
+        one=True,
+    )
+
+    if not reset:
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_input,
+            error="Invalid or already used reset code/token.",
+            success=None,
+        )
+
+    # Check expiry
+    expires_at = datetime.fromisoformat(reset["expires_at"])
+    if datetime.now() > expires_at:
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_input,
+            error="Reset code/token has expired. Please request a new one.",
+            success=None,
+        )
+
+    # Check attempts
+    if reset["attempts"] >= MAX_RESET_ATTEMPTS:
+        return render_or_json(
+            "admin/reset_password.html",
+            token=token_input,
+            error="Too many attempts. Please request a new reset code/token.",
+            success=None,
+        )
+
+    # Increment attempts first
+    execute_db(
+        "UPDATE admin_password_resets SET attempts = attempts + 1 WHERE id = ?",
+        (reset["id"],),
+    )
+
+    # Update password
+    new_hash = generate_password_hash(new_password)
+    execute_db(
+        "UPDATE admin_users SET password_hash = ? WHERE id = ?",
+        (new_hash, reset["admin_user_id"]),
+    )
+
+    # Mark token as used
+    execute_db(
+        "UPDATE admin_password_resets SET used_at = ? WHERE id = ?",
+        (_iso(datetime.now()), reset["id"]),
+    )
+
+    return redirect(url_for("admin.login") + "?reset=success")
