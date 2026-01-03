@@ -441,7 +441,7 @@ def create_booking():
     booking_code = secrets.token_urlsafe(6)
     now = _iso(datetime.now())
     execute_db(
-    """
+        """
     INSERT INTO appointments (
         customer_name, customer_phone, customer_email,
         service_id, barber_id,
@@ -451,21 +451,21 @@ def create_booking():
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """,
-    (
-        customer_name,
-        customer_phone or None,
-        customer_email or None,
-        service_id,
-        barber_id,
-        _iso(start_dt),
-        _iso(end_dt),
-        "booked",
-        booking_code,
-        "",
-        now,
-        now,
-    ),
-)
+        (
+            customer_name,
+            customer_phone or None,
+            customer_email or None,
+            service_id,
+            barber_id,
+            _iso(start_dt),
+            _iso(end_dt),
+            "booked",
+            booking_code,
+            "",
+            now,
+            now,
+        ),
+    )
 
     return redirect(url_for("admin.day", date=d.isoformat()))
 
