@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Settings · Admin · ScheduleBooker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="admin-toolbar">
+        <div>
+            <h1 class="admin-title">Admin Settings</h1>
+            <p class="admin-subtitle">Manage your profile and password.</p>
+        </div>
+
+        <div class="admin-toolbar-right">
+            <a class="btn btn-outline" href="{{ url_for('admin.day') }}">Back to Calendar</a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="settings-alert settings-alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+    <div class="settings-alert settings-alert-success">{{ success }}</div>
+    {% endif %}
+
+    <!-- Profile Card -->
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <h2>Profile Information</h2>
+            <p class="muted">Update your username, email, and phone.</p>
+        </div>
+
+        <form method="post" action="{{ url_for('admin.update_profile') }}" class="settings-form">
+            <div class="settings-form-grid">
+                <div class="settings-field">
+                    <label for="username">Username</label>
+                    <input id="username" name="username" type="text" value="{{ admin.username or '' }}" required>
+                </div>
+
+                <div class="settings-field">
+                    <label for="email">Email (for password reset)</label>
+                    <input id="email" name="email" type="email" value="{{ admin.email or '' }}"
+                        placeholder="your@email.com">
+                </div>
+
+                <div class="settings-field">
+                    <label for="phone">Phone (for SMS reset)</label>
+                    <input id="phone" name="phone" type="tel" value="{{ admin.phone or '' }}" placeholder="5141234567">
+                </div>
+
+                <div class="settings-field settings-field-full">
+                    <label for="current_password_profile">Current Password (required to save changes)</label>
+                    <input id="current_password_profile" name="current_password" type="password" required>
+                </div>
+            </div>
+
+            <div class="settings-form-actions">
+                <button class="btn" type="submit">Save Profile</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Password Card -->
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <h2>Change Password</h2>
+            <p class="muted">Password must be at least 8 characters.</p>
+        </div>
+
+        <form method="post" action="{{ url_for('admin.change_password') }}" class="settings-form">
+            <div class="settings-form-grid">
+                <div class="settings-field">
+                    <label for="current_password_change">Current Password</label>
+                    <input id="current_password_change" name="current_password" type="password" required>
+                </div>
+
+                <div class="settings-field">
+                    <label for="new_password">New Password (min 8 characters)</label>
+                    <input id="new_password" name="new_password" type="password" minlength="8" required>
+                </div>
+
+                <div class="settings-field">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input id="confirm_password" name="confirm_password" type="password" minlength="8" required>
+                </div>
+            </div>
+
+            <div class="settings-form-actions">
+                <button class="btn" type="submit">Change Password</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reset Options Card -->
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <h2>Forgot Password?</h2>
+            <p class="muted">Lost access? You can reset your password via email or SMS.</p>
+        </div>
+
+        <div class="settings-reset-info">
+            <p>If you forget your password, visit the <a href="{{ url_for('admin.forgot_password') }}">password reset
+                    page</a>.</p>
+            <p class="small" style="margin-top:10px;">
+                {% if admin.email %}
+                ✓ Email reset available: {{ admin.email }}
+                {% else %}
+                ⚠️ No email on file - add one above to enable email reset
+                {% endif %}
+            </p>
+            <p class="small">
+                {% if admin.phone %}
+                ✓ SMS reset available: {{ admin.phone }}
+                {% else %}
+                ⚠️ No phone on file - add one above to enable SMS reset
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

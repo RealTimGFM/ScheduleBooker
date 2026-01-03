@@ -35,6 +35,23 @@ def _ensure_users_password_hash_column(db: sqlite3.Connection) -> None:
 def _ensure_runtime_migrations(db: sqlite3.Connection) -> None:
     _ensure_users_password_hash_column(db)
     _ensure_barbers_phone_column(db)
+    _ensure_admin_settings_columns(db)
+
+
+def _ensure_admin_settings_columns(db: sqlite3.Connection) -> None:
+    """Add email and phone columns to admin_users if missing."""
+    if not _table_exists(db, "admin_users"):
+        return
+
+    cols = {r["name"] for r in db.execute("PRAGMA table_info(admin_users)").fetchall()}
+
+    if "email" not in cols:
+        db.execute("ALTER TABLE admin_users ADD COLUMN email TEXT")
+
+    if "phone" not in cols:
+        db.execute("ALTER TABLE admin_users ADD COLUMN phone TEXT")
+
+    db.commit()
 
 
 def get_db():
