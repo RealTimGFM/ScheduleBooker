@@ -42,7 +42,6 @@ with app.app_context():
             )
 
     # Seed barbers
-# Seed barbers
     rows = db.execute("SELECT COUNT(*) AS c FROM barbers").fetchone()
     if rows["c"] == 0:
         barbers = [
@@ -51,7 +50,9 @@ with app.app_context():
             ("Barber C", "5143333333"),
         ]
         for name, phone in barbers:
-            execute_db("INSERT INTO barbers (name, phone, is_active) VALUES (?, ?, 1)", (name, phone))
+            execute_db(
+                "INSERT INTO barbers (name, phone, is_active) VALUES (?, ?, 1)", (name, phone)
+            )
     # Seed default admin account (hashed password)
     rows = db.execute("SELECT COUNT(*) AS c FROM admin_users").fetchone()
     if rows["c"] == 0:
