@@ -669,3 +669,160 @@ def services_restore(service_id: int):
 
     execute_db("UPDATE services SET is_active = 1 WHERE id = ?", (service_id,))
     return redirect(url_for("admin.services_list"))
+
+
+# =============================================================================
+# Admin: Barbers CRUD (with soft-delete via is_active=0)
+# =============================================================================
+
+
+def _barber_error_from_code(code: str | None) -> str | None:
+    if not code:
+        return None
+    mapping = {
+        "not_found": "Barber not found.",
+        "confirm_required": "Confirmation missing. Action cancelled.",
+        "duplicate_name": "A barber with that name already exists.",
+        "invalid_form": "Please correct the highlighted fields.",
+    }
+    return mapping.get(code, "Something went wrong.")
+
+
+def _parse_barber_form(form) -> tuple[dict, str | None]:
+    """
+    Returns: (data, error_message)
+    """
+    name = (form.get("name") or "").strip()
+    phone = (form.get("phone") or "").strip()
+
+    # checkboxes
+    is_active = 1 if form.get("is_active") else 0
+
+    # validation
+    if not name:
+        return {}, "Name is required."
+    if not phone:
+        return {}, "Phone is required."
+
+    data = {
+        "name": name,
+        "phone": phone,
+        "is_active": is_active,
+    }
+    return data, None
+
+
+@admin_bp.get("/barbers")
+def barbers_list():
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    active = query_db("SELECT * FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+    hidden = query_db("SELECT * FROM barbers WHERE is_active = 0 ORDER BY name ASC")
+
+    error = _barber_error_from_code(request.args.get("error"))
+    return render_or_json(
+        "admin/barbers.html",
+        active_barbers=active,
+        hidden_barbers=hidden,
+        error=error,
+    )
+
+
+@admin_bp.route("/barbers/new", methods=["GET", "POST"])
+def barbers_new():
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    if request.method == "POST":
+        data, err = _parse_barber_form(request.form)
+        if err:
+            return render_or_json(
+                "admin/barber_form.html",
+                mode="create",
+                barber=data,
+                error=err,
+            )
+
+        try:
+            execute_db(
+                "INSERT INTO barbers (name, phone, is_active) VALUES (?, ?, ?)",
+                (data["name"], data["phone"], data["is_active"]),
+            )
+        except sqlite3.IntegrityError:
+            return redirect(url_for("admin.barbers_list", error="duplicate_name"))
+
+        return redirect(url_for("admin.barbers_list"))
+
+    # GET defaults
+    barber = {
+        "name": "",
+        "phone": "",
+        "is_active": 1,
+    }
+    return render_or_json(
+        "admin/barber_form.html",
+        mode="create",
+        barber=barber,
+        error=None,
+    )
+
+
+@admin_bp.route("/barbers/<int:barber_id>/edit", methods=["GET", "POST"])
+def barbers_edit(barber_id: int):
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    barber = query_db("SELECT * FROM barbers WHERE id = ?", (barber_id,), one=True)
+    if not barber:
+        return redirect(url_for("admin.barbers_list", error="not_found"))
+
+    if request.method == "POST":
+        data, err = _parse_barber_form(request.form)
+        if err:
+            data["id"] = barber_id
+            return render_or_json(
+                "admin/barber_form.html",
+                mode="edit",
+                barber=data,
+                error=err,
+            )
+
+        try:
+            execute_db(
+                "UPDATE barbers SET name=?, phone=?, is_active=? WHERE id=?",
+                (data["name"], data["phone"], data["is_active"], barber_id),
+            )
+        except sqlite3.IntegrityError:
+            return redirect(url_for("admin.barbers_list", error="duplicate_name"))
+
+        return redirect(url_for("admin.barbers_list"))
+
+    return render_or_json(
+        "admin/barber_form.html",
+        mode="edit",
+        barber=barber,
+        error=None,
+    )
+
+
+@admin_bp.post("/barbers/<int:barber_id>/hide")
+def barbers_hide(barber_id: int):
+    if not require_admin():
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.barbers_list"))
+        )
+
+    execute_db("UPDATE barbers SET is_active = 0 WHERE id = ?", (barber_id,))
+    return redirect(url_for("admin.barbers_list"))
+
+
+@admin_bp.post("/barbers/<int:barber_id>/restore")
+def barbers_restore(barber_id: int):
+    if not require_admin():
+        return redirect(
+            url_for("admin.login", next=request.referrer or url_for("admin.barbers_list"))
+        )
+
+    execute_db("UPDATE barbers SET is_active = 1 WHERE id = ?", (barber_id,))
+    return redirect(url_for("admin.barbers_list"))
