@@ -439,17 +439,18 @@ def create_booking():
     end_dt = start_dt + timedelta(minutes=duration_min)
 
     booking_code = secrets.token_urlsafe(6)
-
+    now = _iso(datetime.now())
     execute_db(
         """
-        INSERT INTO appointments (
-            customer_name, customer_phone, customer_email,
-            service_id, barber_id,
-            start_time, end_time,
-            status, booking_code, notes
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
+    INSERT INTO appointments (
+        customer_name, customer_phone, customer_email,
+        service_id, barber_id,
+        start_time, end_time,
+        status, booking_code, notes,
+        created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """,
         (
             customer_name,
             customer_phone or None,
@@ -461,6 +462,8 @@ def create_booking():
             "booked",
             booking_code,
             "",
+            now,
+            now,
         ),
     )
 
