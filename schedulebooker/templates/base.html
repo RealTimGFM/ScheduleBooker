@@ -4,7 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}ScheduleBooker{% endblock %}</title>
+  <title>{% block title %}Sonthien Coiffure{% endblock %}</title>
+
 
   <!-- Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,10 +23,10 @@
   <nav class="navbar">
     <div class="navdiv">
       <a href="{{ url_for('public.services') }}" aria-label="Home" style="display:flex; align-items:center; gap:10px;">
-        <img class="logo" src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo"
+        <img class="logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Sonthien Coiffure logo"
           onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
         <span id="logo-fallback" style="display:none; color: var(--gold-warm); font-weight: 800; letter-spacing: 1px;">
-          LOGO
+          Sonthien Coiffure
         </span>
       </a>
 
@@ -96,11 +97,15 @@
     <div class="footer-container">
       <div>
         <h4>Sonthien Coiffure</h4>
-        <p class="footer-copy">Unisex hair salon in Montréal.</p>
+        <p class="footer-copy">Salon de coiffure · Montréal (Petite Italie)</p>
         <p class="footer-copy">
           <a href="tel:+15142773585">(514) 277-3585</a>
         </p>
-        <p class="footer-copy">29B Avenue Shamrock, Montréal, QC H2S 1A3</p>
+        <p class="footer-copy">
+          <a href="https://maps.google.com/?q=29B+Av+Shamrock,+Montr%C3%A9al,+QC+H2S+1A3">
+            29B Av. Shamrock, Montréal, QC H2S 1A3
+          </a>
+        </p>
       </div>
 
       <div>
