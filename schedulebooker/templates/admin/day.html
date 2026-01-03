@@ -64,7 +64,7 @@
         {% else %}
         <div class="booking-list">
           {% for b in bookings %}
-          <div class="booking-card">
+          <div class="booking-card" data-booking-id="{{ b.id }}">
             <div class="booking-time">
               {{ b.start_time[11:16] }}{% if b.end_time %}–{{ b.end_time[11:16] }}{% endif %}
             </div>
