@@ -155,6 +155,13 @@
       const color = barberColors[barberId] || '#cccccc';
       element.style.borderColor = color;
       element.style.background = `linear-gradient(135deg, ${color}22, ${color}44)`;
+      // Set name 
+      const nameEl = element.querySelector(".booking-block-name");
+      if (nameEl) {
+        const full = nameEl.textContent || "";
+        nameEl.title = full;                 // hover shows full name
+        nameEl.textContent = formatDisplayName(full);
+      }
 
       // Apply positioning
       element.style.top = `${top}px`;
@@ -556,3 +563,17 @@
     setInterval(updateNowIndicator, 60 * 1000);
   });
 })();
+
+function formatDisplayName(fullName) {
+  const s = (fullName || "").trim();
+  if (!s) return "";
+
+  // Prefer first name for quick scanning
+  const first = s.split(/\s+/)[0];
+
+  // If first name itself is long, cut it
+  const MAX = 10; // tweak (8–14)
+  if (first.length > MAX) return first.slice(0, MAX) + "…";
+
+  return first;
+}
