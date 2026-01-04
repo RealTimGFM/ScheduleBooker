@@ -1,3 +1,41 @@
+/* FULLSCREEN admin calendar page */
+main {
+  padding: 0;
+  /* overrides site.css main { padding: 100px 0; } for this page */
+}
+
+.calendar-wrapper {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+
+  /* Full viewport height minus navbar (adjust 70px if your navbar is different) */
+  min-height: calc(100vh - 70px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-grid {
+  flex: 1;
+  min-height: 0;
+  /* IMPORTANT for internal scroll areas */
+}
+
+/* Make the day timeline scroll inside the page (so page stays “fullscreen”) */
+.day-calendar {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: visible;
+}
+
+/* =========================
+   Base styles for admin page
+   ========================= */
+
 :root {
   --red-main: #d32f2f;
   --red-dark: #8b0000;
@@ -110,7 +148,7 @@ body {
 
 /* WRAPPER */
 .calendar-wrapper {
-  max-width: 1500px;
+  max-width: 100%;
   margin: 0 auto 120px;
   padding: 30px 24px;
   background: var(--bg-card);
@@ -1729,4 +1767,49 @@ textarea {
   /* anchor point */
   transform: translateX(calc(100% + 12px));
   /* move outside by its own width + gap */
+}
+
+/* Put time + name on the same row, meta on the next row */
+.booking-block {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "time name"
+    "meta meta";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-content: start;
+}
+
+.booking-block-time {
+  grid-area: time;
+  margin: 0;
+}
+
+.booking-block-name {
+  grid-area: name;
+  margin: 0;
+  min-width: 0;
+}
+
+.booking-block-meta {
+  grid-area: meta;
+  margin: 0;
+}
+
+/* One-line header inside booking block so name doesn't get clipped */
+.booking-block-time,
+.booking-block-name {
+  display: inline-block;
+  margin-bottom: 0;
+  vertical-align: baseline;
+}
+
+.booking-block-time {
+  margin-right: 8px;
+}
+
+/* Meta line gets clipped in short blocks; hide it to prioritize navigation */
+.booking-block-meta {
+  display: none;
 }
