@@ -148,11 +148,10 @@ body {
   --booking-left: 60px;
   /* where bookings start (time labels width) */
   --booking-right: 10px;
-  /* existing right padding */
-  --overflow-gutter: 56px;
   /* NEW: reserved space for +X */
   --usable-width: calc(100% - var(--booking-left) - var(--booking-right) - var(--overflow-gutter));
-
+  --overflow-outset: 10px;
+  /* adjust 40–80px to taste */
 }
 
 /* Booking blocks overlay layer */
@@ -160,6 +159,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  overflow: visible;
   /* clicks pass through to time slots */
   z-index: 5;
 }
@@ -1118,7 +1118,7 @@ hr {
 }
 
 .overflow-indicator {
-  right: var(--booking-right);
+  right: calc(6px - var(--overflow-outset));
   width: 52px;
   /* optional: a bit wider */
 }
@@ -1715,4 +1715,18 @@ textarea {
 
 .booking-card:active {
   transform: translateY(0);
+}
+
+/* Allow drawing outside the calendar area */
+.day-calendar,
+.booking-blocks-container {
+  overflow: visible;
+}
+
+/* Push +X outside to the right */
+.overflow-indicator {
+  right: 24px;
+  /* anchor point */
+  transform: translateX(calc(100% + 12px));
+  /* move outside by its own width + gap */
 }
