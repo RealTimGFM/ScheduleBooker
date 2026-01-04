@@ -462,6 +462,43 @@
       });
     }
   }
+  function setupCalendarFullscreenToggle() {
+    const btn = qs("#toggle-calendar-fullscreen");
+    if (!btn) return;
+
+    const KEY = "admin_calendar_fullscreen";
+
+    function setFullscreen(on) {
+      document.body.classList.toggle("calendar-fullscreen", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.textContent = on ? "Exit full screen" : "Full screen";
+
+      // Recompute widths/heights after layout change
+      positionBookingBlocks();
+      updateNowIndicator();
+
+      try {
+        localStorage.setItem(KEY, on ? "1" : "0");
+      } catch (_) { }
+    }
+
+    // restore last state
+    try {
+      if (localStorage.getItem(KEY) === "1") setFullscreen(true);
+    } catch (_) { }
+
+    btn.addEventListener("click", () => {
+      const on = !document.body.classList.contains("calendar-fullscreen");
+      setFullscreen(on);
+    });
+
+    // Esc exits fullscreen
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.body.classList.contains("calendar-fullscreen")) {
+        setFullscreen(false);
+      }
+    });
+  }
 
   // ============ CLICK HANDLERS ============
   function setupClickHandlers() {
@@ -546,6 +583,8 @@
     setupClickHandlers();
 
     // Initial positioning
+    setupCalendarFullscreenToggle();
+
     positionBookingBlocks();
     updateNowIndicator();
 

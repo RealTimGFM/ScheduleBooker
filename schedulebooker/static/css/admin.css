@@ -38,6 +38,8 @@ main {
 
 :root {
   --red-main: #d32f2f;
+  --green-main: #42b648;
+  --green-dark: #1b5e20;
   --red-dark: #8b0000;
   --bg-body: #f4f4f4;
   --bg-card: #ffffff;
@@ -69,8 +71,8 @@ body {
 /* NAVBAR */
 .navbar {
   background: linear-gradient(to right,
-      var(--red-main),
-      var(--red-dark),
+      var(--green-main),
+      var(--green-dark),
       var(--black-main));
 }
 
@@ -367,8 +369,8 @@ main {
 /* NAVBAR */
 .navbar {
   background: linear-gradient(to right,
-      var(--red-main),
-      var(--red-dark),
+      var(--green-main),
+      var(--green-dark),
       var(--black-main));
 }
 
@@ -1812,4 +1814,62 @@ textarea {
 /* Meta line gets clipped in short blocks; hide it to prioritize navigation */
 .booking-block-meta {
   display: none;
+}
+
+/* =========================================================
+   Admin Day Calendar: Fullscreen toggle
+   ========================================================= */
+
+body.calendar-fullscreen {
+  overflow: hidden;
+}
+
+/* Turn the calendar card into an overlay that fills the viewport */
+body.calendar-fullscreen .calendar-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  max-width: none;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Let the active view consume remaining height */
+body.calendar-fullscreen .calendar-view.active {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Day view grid: give the calendar all the width (hide side panel) */
+body.calendar-fullscreen #day-view .admin-grid {
+  grid-template-columns: 1fr;
+  height: 100%;
+  min-height: 0;
+}
+
+body.calendar-fullscreen #day-view .side-panel {
+  display: none;
+}
+
+/* Make sure the timeline can scroll inside fullscreen */
+body.calendar-fullscreen #day-view .day-calendar {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: visible;
+}
+
+/* Put date on its own row (optional but makes layout stable) */
+.admin-toolbar-right .admin-date {
+  flex: 1 1 100%;
+}
+
+/* Push the action buttons to the far right */
+#open-booking-modal {
+  margin-left: auto;
 }
