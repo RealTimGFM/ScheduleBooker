@@ -99,9 +99,11 @@
     const bookings = blocks.map(block => {
       const start = new Date(block.dataset.start);
       const end = new Date(block.dataset.end);
+      const barberId = block.dataset.barberId || 'none';
       return {
         element: block,
         id: block.dataset.id,
+        barberId: barberId,
         start: start,
         end: end,
         startMinutes: start.getHours() * 60 + start.getMinutes(),
@@ -113,12 +115,33 @@
     bookings.sort((a, b) => a.startMinutes - b.startMinutes);
 
     // Detect overlaps and assign columns
-    const columns = assignColumns(bookings);
+    const { columns, overflowIntervals } = assignColumns(bookings);
+
+    // Generate stable barber colors
+    const barberColors = {};
+    const colorPalette = [
+      '#ff6b6b', '#4ecdc4', '#45b7d1', '#f7b731',
+      '#5f27cd', '#00d2d3', '#ff9ff3', '#54a0ff'
+    ];
+
+    bookings.forEach(b => {
+      if (!barberColors[b.barberId]) {
+        // Hash barber ID to get consistent color
+        let hash = 0;
+        for (let i = 0; i < b.barberId.length; i++) {
+          hash = b.barberId.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        barberColors[b.barberId] = colorPalette[Math.abs(hash) % colorPalette.length];
+      }
+    });
+
+    // Track overflow indicators per time slot
+    const overflowBySlot = {};
 
     // Position each block
     bookings.forEach((booking, idx) => {
-      const { element, startMinutes, endMinutes } = booking;
-      const { column, columnCount } = columns[idx];
+      const { element, startMinutes, endMinutes, barberId } = booking;
+      const col = columns[idx];
 
       // Calculate top position
       const startOffsetMinutes = startMinutes - (startHour * 60);
@@ -126,63 +149,202 @@
 
       // Calculate height
       const durationMinutes = endMinutes - startMinutes;
-      const height = Math.max((durationMinutes / 60) * slotHeight, 40); // min 40px
+      const height = Math.max((durationMinutes / 60) * slotHeight, 40);
+
+      // Apply barber color
+      const color = barberColors[barberId] || '#cccccc';
+      element.style.borderColor = color;
+      element.style.background = `linear-gradient(135deg, ${color}22, ${color}44)`;
 
       // Apply positioning
       element.style.top = `${top}px`;
       element.style.height = `${height}px`;
-      element.style.display = "block";
 
-      // Apply column layout
-      element.dataset.column = column;
-      element.dataset.columnCount = Math.min(columnCount, 4); // Cap at 4
+      // Apply column layout via data attributes
+      element.setAttribute("data-column", String(col.column));
+      element.setAttribute("data-column-count", String(col.columnCount));
+
+      // Hide if overflow (beyond 4th lane)
+      if (col.column >= 4) {
+        element.style.display = "none";
+        // Track overflow for this time range
+        const slotKey = Math.floor(startMinutes / 30);
+        if (!overflowBySlot[slotKey]) {
+          overflowBySlot[slotKey] = {
+            count: 0,
+            top,
+            height,
+            startMinutes
+          };
+        }
+        overflowBySlot[slotKey].count++;
+      } else {
+        element.style.display = "block";
+      }
+    });
+
+    // Add "+X" overflow indicators
+    qsa(".overflow-indicator", container).forEach((el) => el.remove());
+
+    // Add overflow indicators (one per overflow interval)
+    overflowIntervals.forEach(({ startMinutes, endMinutes, count }) => {
+      if (count <= 0) return;
+
+      const top = ((startMinutes - startHour * 60) / 60) * slotHeight;
+      const height = Math.max(((endMinutes - startMinutes) / 60) * slotHeight, 40);
+
+      const indicator = document.createElement("div");
+      indicator.className = "overflow-indicator";
+      indicator.textContent = `+${count}`;
+      indicator.style.top = `${top}px`;
+      indicator.style.height = `${height}px`;
+      indicator.title = `${count} more booking(s) overlapping`;
+
+      container.appendChild(indicator);
     });
   }
 
-  // Overlap detection and column assignment
+  // Overlap detection and column assignment with max 4 lanes
+  // Overlap detection and column assignment (supports real overflow)
   function assignColumns(bookings) {
-    const columns = [];
-    const groups = [];
+    const columns = new Array(bookings.length);
+
+    // Helper: overlap test
+    function overlaps(a, b) {
+      return a.startMinutes < b.endMinutes && a.endMinutes > b.startMinutes;
+    }
+
+    // 1) Build overlap groups, WITH MERGING
+    // (Your current logic does not merge groups when a booking bridges two groups.)
+    const groups = []; // each group: { indices: [] }
 
     bookings.forEach((booking, idx) => {
-      // Find overlapping group
-      let group = null;
-      for (const g of groups) {
-        if (g.some(i => overlaps(bookings[i], booking))) {
-          group = g;
-          break;
+      const hitGroupIdxs = [];
+
+      for (let gi = 0; gi < groups.length; gi++) {
+        const g = groups[gi];
+        if (g.indices.some((i) => overlaps(bookings[i], booking))) {
+          hitGroupIdxs.push(gi);
         }
       }
 
-      if (!group) {
-        // Start new group
-        group = [idx];
-        groups.push(group);
-      } else {
-        group.push(idx);
+      if (hitGroupIdxs.length === 0) {
+        groups.push({ indices: [idx] });
+        return;
       }
 
-      // Assign to first available column in group
-      const usedColumns = group.slice(0, -1).map(i => columns[i].column);
-      let column = 0;
-      while (usedColumns.includes(column)) column++;
+      // Merge all hit groups into the first hit group
+      const base = groups[hitGroupIdxs[0]];
+      base.indices.push(idx);
 
-      columns[idx] = {
-        column: Math.min(column, 3), // Cap at column 3 (4 columns max)
-        columnCount: 0 // Will be set after
-      };
+      // Merge remaining groups (remove from end to keep indexes valid)
+      for (let k = hitGroupIdxs.length - 1; k >= 1; k--) {
+        const gi = hitGroupIdxs[k];
+        base.indices.push(...groups[gi].indices);
+        groups.splice(gi, 1);
+      }
     });
 
-    // Set column counts for each group
-    groups.forEach(group => {
-      const maxColumn = Math.max(...group.map(i => columns[i].column));
-      const columnCount = Math.min(maxColumn + 1, 4); // Cap at 4
-      group.forEach(i => {
-        columns[i].columnCount = columnCount;
+    // 2) For each group, assign lanes using a standard greedy lane scheduler
+    const overflowIntervals = [];
+
+    groups.forEach((g) => {
+      const indices = Array.from(new Set(g.indices)); // de-dupe
+      indices.sort((ia, ib) => {
+        const a = bookings[ia], b = bookings[ib];
+        return a.startMinutes - b.startMinutes || a.endMinutes - b.endMinutes;
+      });
+
+      // Lane assignment (unbounded lanes)
+      const laneEnds = []; // laneEnds[lane] = endMinutes
+      let maxLanes = 0;
+
+      indices.forEach((i) => {
+        const b = bookings[i];
+
+        // Find first available lane
+        let lane = -1;
+        for (let l = 0; l < laneEnds.length; l++) {
+          if (laneEnds[l] <= b.startMinutes) {
+            lane = l;
+            break;
+          }
+        }
+        if (lane === -1) {
+          lane = laneEnds.length;
+          laneEnds.push(b.endMinutes);
+        } else {
+          laneEnds[lane] = b.endMinutes;
+        }
+
+        maxLanes = Math.max(maxLanes, laneEnds.length);
+
+        columns[i] = {
+          column: lane,        // may be >= 4
+          columnCount: 0,      // set after
+        };
+      });
+
+      const visibleCols = Math.min(maxLanes, 4);
+
+      // Set columnCount for all bookings in group
+      indices.forEach((i) => {
+        columns[i].columnCount = visibleCols;
+      });
+
+      // 3) Compute precise time intervals where overlap > 4 (for +X)
+      // Sweep line over start/end events to find overflow segments.
+      const events = [];
+      indices.forEach((i) => {
+        const b = bookings[i];
+        events.push([b.startMinutes, +1]);
+        events.push([b.endMinutes, -1]);
+      });
+
+      // End (-1) before start (+1) at same time
+      events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+      let active = 0;
+      let maxActive = 0;
+      const intervals = [];
+
+      let p = 0;
+      while (p < events.length) {
+        const t = events[p][0];
+
+        // apply all deltas at time t
+        while (p < events.length && events[p][0] === t) {
+          active += events[p][1];
+          maxActive = Math.max(maxActive, active);
+          p++;
+        }
+
+        if (p >= events.length) break;
+
+        const nextT = events[p][0];
+        if (active > 4 && nextT > t) {
+          intervals.push([t, nextT]);
+        }
+      }
+
+      // Merge adjacent/overlapping intervals
+      intervals.sort((a, b) => a[0] - b[0]);
+      const merged = [];
+      intervals.forEach(([s, e]) => {
+        if (!merged.length || s > merged[merged.length - 1][1]) {
+          merged.push([s, e]);
+        } else {
+          merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], e);
+        }
+      });
+
+      const hiddenCount = Math.max(0, maxActive - 4);
+      merged.forEach(([s, e]) => {
+        overflowIntervals.push({ startMinutes: s, endMinutes: e, count: hiddenCount });
       });
     });
 
-    return columns;
+    return { columns, overflowIntervals };
   }
 
   function overlaps(a, b) {
@@ -299,15 +461,13 @@
     // Time slot clicks (empty space)
     qsa(".time-slot").forEach((slot) => {
       slot.addEventListener("click", (e) => {
-        // Only trigger if clicking the slot itself, not a booking block
         if (e.target !== slot) return;
-
         const time = slot.dataset.time || "";
         openModal("create", { time });
       });
     });
 
-    // Booking block clicks
+    // Booking block clicks (in calendar)
     const container = qs("#booking-blocks");
     if (container) {
       container.addEventListener("click", (e) => {
@@ -330,6 +490,32 @@
       });
     }
 
+    // *** NEW: Booking card clicks (in sidebar list) ***
+    qsa(".booking-card").forEach((card) => {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", (e) => {
+        // Find the booking ID from the card
+        const bookingBlock = qsa(".booking-block").find(block => {
+          return block.dataset.customer === card.querySelector('.booking-name')?.textContent;
+        });
+
+        if (bookingBlock) {
+          const data = {
+            id: bookingBlock.dataset.id,
+            customer: bookingBlock.dataset.customer,
+            phone: bookingBlock.dataset.phone,
+            email: bookingBlock.dataset.email,
+            serviceId: bookingBlock.dataset.serviceId,
+            barberId: bookingBlock.dataset.barberId,
+            date: bookingBlock.dataset.start.slice(0, 10),
+            time: bookingBlock.dataset.start.slice(11, 16),
+            notes: bookingBlock.dataset.notes,
+          };
+          openModal("edit", data);
+        }
+      });
+    });
+
     // Month cells: click a date to jump to that day
     qsa(".date-cell[data-date]").forEach((cell) => {
       cell.addEventListener("click", () => {
@@ -341,7 +527,6 @@
       });
     });
   }
-
   // ============ INITIALIZATION ============
   document.addEventListener("DOMContentLoaded", () => {
     // View switching

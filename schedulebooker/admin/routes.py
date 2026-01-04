@@ -248,6 +248,25 @@ def _update_rate_limit(admin_id: int, channel: str):
     )
 
 
+def _validate_shop_hours(day: date, start_t: time, end_t: time) -> str | None:
+    """Validate booking is within shop hours. Returns error message or None."""
+    # Monday closed
+    if day.weekday() == 0:
+        return "Shop is closed on Monday."
+
+    # Shop hours: 11:00-19:00
+    shop_open = time(11, 0)
+    shop_close = time(19, 0)
+
+    if start_t < shop_open or start_t >= shop_close:
+        return "Start time must be between 11:00 and 19:00."
+
+    if end_t > shop_close:
+        return f"Booking ends at {end_t.strftime('%H:%M')}, which is after closing time (19:00)."
+
+    return None
+
+
 @admin_bp.get("/")
 def home():
     """Navbar entry point: if not logged in, go to admin login; else go to admin calendar."""
@@ -438,6 +457,27 @@ def create_booking():
     duration_min = int(service["duration_min"]) if service else 30
     end_dt = start_dt + timedelta(minutes=duration_min)
 
+    # VALIDATION: Check shop hours
+    hours_error = _validate_shop_hours(d, t, end_dt.time())
+    if hours_error:
+        # Return to day view with error
+        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+
+        return render_or_json(
+            "admin/day.html",
+            date=d.isoformat(),
+            bookings=[],
+            services=[dict(r) for r in services],
+            barbers=[dict(r) for r in barbers],
+            week_days=[],
+            month_cells=[],
+            month_label="",
+            day_hours=list(range(DAY_START_HOUR, DAY_END_HOUR + 1)),
+            day_start_hour=DAY_START_HOUR,
+            error=hours_error,
+        )
+
     booking_code = secrets.token_urlsafe(6)
     now = _iso(datetime.now())
     execute_db(
@@ -494,7 +534,6 @@ def edit_booking(booking_id: int):
     t = _parse_time_hhmm(request.form.get("time"))
 
     if not (customer_name and service_id and d and t):
-        # Redirect back with original date
         return redirect(url_for("admin.day", date=booking["start_time"][:10]))
 
     start_dt = datetime.combine(d, t)
@@ -502,6 +541,27 @@ def edit_booking(booking_id: int):
     service = query_db("SELECT * FROM services WHERE id = ?", (service_id,), one=True)
     duration_min = int(service["duration_min"]) if service else 30
     end_dt = start_dt + timedelta(minutes=duration_min)
+
+    # VALIDATION: Check shop hours
+    hours_error = _validate_shop_hours(d, t, end_dt.time())
+    if hours_error:
+        # Return to day view with error
+        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+
+        return render_or_json(
+            "admin/day.html",
+            date=d.isoformat(),
+            bookings=[],
+            services=[dict(r) for r in services],
+            barbers=[dict(r) for r in barbers],
+            week_days=[],
+            month_cells=[],
+            month_label="",
+            day_hours=list(range(DAY_START_HOUR, DAY_END_HOUR + 1)),
+            day_start_hour=DAY_START_HOUR,
+            error=hours_error,
+        )
 
     execute_db(
         """
@@ -538,11 +598,8 @@ def delete_booking(booking_id: int):
     if not booking:
         return redirect(url_for("admin.day"))
 
-    # Soft delete
-    execute_db(
-        "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
-        (_iso(datetime.now()), booking_id),
-    )
+    # HARD DELETE (not soft delete)
+    execute_db("DELETE FROM appointments WHERE id = ?", (booking_id,))
 
     return redirect(url_for("admin.day", date=booking["start_time"][:10]))
 
