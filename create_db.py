@@ -45,7 +45,7 @@ with app.app_context():
     rows = db.execute("SELECT COUNT(*) AS c FROM barbers").fetchone()
     if rows["c"] == 0:
         barbers = [
-            ("Barber A", "5141111111"),
+            ("Mr Thien", "(514) 277-3585"),
             ("Barber B", "5142222222"),
             ("Barber C", "5143333333"),
         ]

@@ -774,6 +774,18 @@ hr {
   gap: 10px;
 }
 
+/* Hour grouping header in Day sidebar booking list */
+.booking-hour-heading {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 900;
+  font-size: 15px;
+  color: red;
+}
+
+
 .booking-card {
   display: grid;
   grid-template-columns: 92px 1fr;
