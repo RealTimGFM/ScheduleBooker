@@ -207,6 +207,10 @@
       indicator.style.height = `${height}px`;
       indicator.title = `${count} more booking(s) overlapping`;
 
+      // Used for hover-linking hidden bookings to the correct "+X"
+      indicator.dataset.startMinutes = String(startMinutes);
+      indicator.dataset.endMinutes = String(endMinutes);
+
       container.appendChild(indicator);
     });
   }
@@ -500,16 +504,138 @@
     });
   }
 
-  // ============ CLICK HANDLERS ============
+  // ============ CLICK + HOVER HELPERS ============
+  const CREATE_SNAP_MINUTES = 30; // matches current 30-min slotKey logic used elsewhere
+
+  const LINK_HOVER_CLASS = "is-linked-hover";
+
+  function minutesFromISO(isoStr) {
+    if (!isoStr) return null;
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function minutesToHHMM(totalMinutes) {
+    const m = Math.max(0, Math.min(23 * 60 + 59, Math.floor(totalMinutes)));
+    const hh = String(Math.floor(m / 60)).padStart(2, "0");
+    const mm = String(m % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function calcCreateTimeFromClick(dayViewEl, dayCalEl, evt) {
+    const startHour = parseInt(dayViewEl?.dataset?.startHour || "9", 10);
+    const slots = qsa(".time-slot", dayCalEl);
+    if (!slots.length) return null;
+
+    const slotHeight = slots[0].getBoundingClientRect().height || 60;
+
+    const rect = dayCalEl.getBoundingClientRect();
+    const y = (evt.clientY - rect.top) + dayCalEl.scrollTop;
+
+    const dayStart = startHour * 60;
+    const dayEnd = (startHour + slots.length) * 60; // slots are hourly labels
+
+    const rawMinutes = dayStart + (y / slotHeight) * 60;
+    let snapped = Math.floor(rawMinutes / CREATE_SNAP_MINUTES) * CREATE_SNAP_MINUTES;
+
+    const maxStart = Math.max(dayStart, dayEnd - CREATE_SNAP_MINUTES);
+    snapped = Math.max(dayStart, Math.min(snapped, maxStart));
+
+    return minutesToHHMM(snapped);
+  }
+
+  function findOverflowIndicatorForMinutes(minutes) {
+    const container = qs("#booking-blocks");
+    if (!container || minutes == null) return null;
+
+    const indicators = qsa(
+      '.overflow-indicator[data-start-minutes][data-end-minutes]',
+      container
+    );
+
+    let best = null;
+    indicators.forEach((el) => {
+      const s = parseInt(el.dataset.startMinutes || "", 10);
+      const e = parseInt(el.dataset.endMinutes || "", 10);
+      if (!Number.isFinite(s) || !Number.isFinite(e)) return;
+
+      if (minutes >= s && minutes < e) {
+        if (!best) best = el;
+        else {
+          const bestRange =
+            parseInt(best.dataset.endMinutes, 10) - parseInt(best.dataset.startMinutes, 10);
+          const range = e - s;
+          if (range < bestRange) best = el;
+        }
+      }
+    });
+
+    return best;
+  }
+
+  function setLinkedHover(bookingId, on) {
+    if (!bookingId) return;
+
+    const card = qs(`.booking-card[data-booking-id="${bookingId}"]`);
+    const block = qs(`.booking-block[data-id="${bookingId}"]`);
+
+    if (card) card.classList.toggle(LINK_HOVER_CLASS, on);
+
+    // If visible: highlight the block. If hidden by overflow: highlight the "+X".
+    if (block) {
+      const visible = getComputedStyle(block).display !== "none";
+      if (visible) {
+        block.classList.toggle(LINK_HOVER_CLASS, on);
+      } else {
+        const startMinutes = minutesFromISO(block.dataset.start);
+        const indicator = findOverflowIndicatorForMinutes(startMinutes);
+        if (indicator) indicator.classList.toggle(LINK_HOVER_CLASS, on);
+      }
+    }
+  }
+
+  function setupHoverLinking() {
+    // Cards -> blocks (+X if hidden)
+    qsa('.booking-card[data-booking-id]').forEach((card) => {
+      if (card.dataset.hoverLinked === "1") return;
+      card.dataset.hoverLinked = "1";
+
+      const id = card.dataset.bookingId;
+      card.addEventListener("mouseenter", () => setLinkedHover(id, true));
+      card.addEventListener("mouseleave", () => setLinkedHover(id, false));
+    });
+
+    // Blocks -> cards
+    qsa('#booking-blocks .booking-block[data-id]').forEach((block) => {
+      if (block.dataset.hoverLinked === "1") return;
+      block.dataset.hoverLinked = "1";
+
+      const id = block.dataset.id;
+      block.addEventListener("mouseenter", () => setLinkedHover(id, true));
+      block.addEventListener("mouseleave", () => setLinkedHover(id, false));
+    });
+  }
+
   function setupClickHandlers() {
-    // Time slot clicks (empty space)
-    qsa(".time-slot").forEach((slot) => {
-      slot.addEventListener("click", (e) => {
-        if (e.target !== slot) return;
-        const time = slot.dataset.time || "";
+    // Day timeline: click anywhere in the grid to create a booking at that time
+    const dayView = qs("#day-view");
+    const dayCal = qs(".day-calendar");
+
+    if (dayView && dayCal) {
+      dayCal.addEventListener("click", (e) => {
+        // Do NOT create when clicking on an existing booking (edit should happen)
+        if (e.target.closest(".booking-block")) return;
+
+        // Do NOT create when clicking the overflow "+X"
+        if (e.target.closest(".overflow-indicator")) return;
+
+        const time = calcCreateTimeFromClick(dayView, dayCal, e);
+        if (!time) return;
+
         openModal("create", { time });
       });
-    });
+    }
 
     // Booking block clicks (in calendar)
     const container = qs("#booking-blocks");
@@ -534,29 +660,29 @@
       });
     }
 
-    // *** NEW: Booking card clicks (in sidebar list) ***
-    qsa(".booking-card").forEach((card) => {
+    // Booking card clicks (in sidebar list) -> open edit for that booking id
+    qsa(".booking-card[data-booking-id]").forEach((card) => {
       card.style.cursor = "pointer";
-      card.addEventListener("click", (e) => {
-        // Find the booking ID from the card
-        const bookingBlock = qsa(".booking-block").find(block => {
-          return block.dataset.customer === card.querySelector('.booking-name')?.textContent;
-        });
+      card.addEventListener("click", () => {
+        const id = card.dataset.bookingId;
+        if (!id) return;
 
-        if (bookingBlock) {
-          const data = {
-            id: bookingBlock.dataset.id,
-            customer: bookingBlock.dataset.customer,
-            phone: bookingBlock.dataset.phone,
-            email: bookingBlock.dataset.email,
-            serviceId: bookingBlock.dataset.serviceId,
-            barberId: bookingBlock.dataset.barberId,
-            date: bookingBlock.dataset.start.slice(0, 10),
-            time: bookingBlock.dataset.start.slice(11, 16),
-            notes: bookingBlock.dataset.notes,
-          };
-          openModal("edit", data);
-        }
+        const bookingBlock = qs(`.booking-block[data-id="${id}"]`);
+        if (!bookingBlock) return;
+
+        const data = {
+          id: bookingBlock.dataset.id,
+          customer: bookingBlock.dataset.customer,
+          phone: bookingBlock.dataset.phone,
+          email: bookingBlock.dataset.email,
+          serviceId: bookingBlock.dataset.serviceId,
+          barberId: bookingBlock.dataset.barberId,
+          date: bookingBlock.dataset.start.slice(0, 10),
+          time: bookingBlock.dataset.start.slice(11, 16),
+          notes: bookingBlock.dataset.notes,
+        };
+
+        openModal("edit", data);
       });
     });
 
@@ -571,6 +697,7 @@
       });
     });
   }
+
   // ============ INITIALIZATION ============
   document.addEventListener("DOMContentLoaded", () => {
     // View switching
@@ -587,6 +714,7 @@
 
     positionBookingBlocks();
     updateNowIndicator();
+    setupHoverLinking();
 
     // Refresh positioning on window resize
     let resizeTimeout;
