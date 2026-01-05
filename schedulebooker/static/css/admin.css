@@ -1160,6 +1160,8 @@ hr {
 .overflow-indicator {
   right: calc(6px - var(--overflow-outset));
   width: 52px;
+  pointer-events: auto;
+  cursor: pointer;
   /* optional: a bit wider */
 }
 
@@ -1872,4 +1874,28 @@ body.calendar-fullscreen #day-view .day-calendar {
 /* Push the action buttons to the far right */
 #open-booking-modal {
   margin-left: auto;
+}
+
+/* ==========================================================================
+   Linked hover (sidebar cards <-> calendar blocks, and +X when hidden)
+   ========================================================================== */
+
+.booking-block.is-linked-hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.35);
+  z-index: 20;
+}
+
+.booking-card.is-linked-hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--red-main);
+}
+
+/* IMPORTANT: your overflow indicator is positioned with transform already,
+   so we repeat the translateX and add a small scale */
+.overflow-indicator.is-linked-hover {
+  transform: translateX(calc(100% + 12px)) scale(1.04);
+  box-shadow: 0 6px 18px rgba(255, 77, 77, 0.55);
+  filter: brightness(1.05);
 }
