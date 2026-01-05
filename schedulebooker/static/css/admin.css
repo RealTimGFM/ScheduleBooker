@@ -1,113 +1,16 @@
 /* FULLSCREEN admin calendar page */
-main {
-  padding: 0;
-  /* overrides site.css main { padding: 100px 0; } for this page */
-}
 
-.calendar-wrapper {
-  max-width: none;
-  width: 100%;
-  margin: 0;
-  border-radius: 0;
-  box-shadow: none;
-
-  /* Full viewport height minus navbar (adjust 70px if your navbar is different) */
-  min-height: calc(100vh - 70px);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-}
-
-.admin-grid {
-  flex: 1;
-  min-height: 0;
-  /* IMPORTANT for internal scroll areas */
-}
 
 /* Make the day timeline scroll inside the page (so page stays “fullscreen”) */
-.day-calendar {
-  height: 100%;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: visible;
-}
+
 
 /* =========================
    Base styles for admin page
    ========================= */
 
-:root {
-  --red-main: #d32f2f;
-  --green-main: #42b648;
-  --green-dark: #1b5e20;
-  --red-dark: #8b0000;
-  --bg-body: #f4f4f4;
-  --bg-card: #ffffff;
-  --text-main: #0b0b0b;
-  --text-soft: #666;
-  --border-soft: #ddd;
-}
-
-body[data-theme="dark"] {
-  --bg-body: #121212;
-  --bg-card: #1f1f1f;
-  --text-main: #f5f5f5;
-  --text-soft: #aaa;
-  --border-soft: #444;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Montserrat', sans-serif;
-}
-
-body {
-  background: var(--bg-body);
-  color: var(--text-main);
-}
 
 /* NAVBAR */
-.navbar {
-  background: linear-gradient(to right,
-      var(--green-main),
-      var(--green-dark),
-      var(--black-main));
-}
 
-.navdiv {
-  max-width: 1500px;
-  margin: auto;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  height: 48px;
-}
-
-.nav-menu {
-  list-style: none;
-  display: flex;
-  gap: 32px;
-}
-
-.nav-menu li a {
-  text-decoration: none;
-  color: var(--white-soft);
-  font-weight: 500;
-}
-
-.nav-auth button {
-  background: transparent;
-  border: 1px solid var(--gold-warm);
-  color: var(--gold-warm);
-  padding: 6px 16px;
-  cursor: pointer;
-}
 
 /* HEADER */
 .admin-header {
@@ -124,15 +27,6 @@ body {
   gap: 10px;
 }
 
-.controls button {
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft);
-  background: transparent;
-  color: var(--text-main);
-  cursor: pointer;
-  font-weight: 600;
-}
 
 .controls button.active {
   background: var(--red-main);
@@ -149,14 +43,7 @@ body {
 }
 
 /* WRAPPER */
-.calendar-wrapper {
-  max-width: 100%;
-  margin: 0 auto 120px;
-  padding: 30px 24px;
-  background: var(--bg-card);
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
+
 
 /* BACK */
 .back-btn {
@@ -182,17 +69,7 @@ body {
 }
 
 /* DAY VIEW */
-.day-calendar {
-  position: relative;
-  border-left: 1px solid var(--border-soft);
-  --booking-left: 60px;
-  /* where bookings start (time labels width) */
-  --booking-right: 10px;
-  /* NEW: reserved space for +X */
-  --usable-width: calc(100% - var(--booking-left) - var(--booking-right) - var(--overflow-gutter));
-  --overflow-outset: 10px;
-  /* adjust 40–80px to taste */
-}
+
 
 /* Booking blocks overlay layer */
 .booking-blocks-container {
@@ -209,13 +86,6 @@ body {
   /* but blocks remain clickable */
 }
 
-.time-slot {
-  height: 60px;
-  border-bottom: 1px solid var(--border-soft);
-  padding-left: 12px;
-  font-size: 13px;
-  color: var(--text-soft);
-}
 
 /* REALTIME */
 #now-indicator {
@@ -247,19 +117,7 @@ body {
 }
 
 /* WEEK */
-.week-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-}
 
-.week-day {
-  background: var(--bg-card);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 10px;
-  min-height: 200px;
-}
 
 /* MONTH */
 .month-grid {
@@ -268,13 +126,6 @@ body {
   gap: 10px;
 }
 
-.date-cell {
-  height: 120px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 6px;
-  font-size: 12px;
-}
 
 .dot {
   width: 6px;
@@ -290,55 +141,17 @@ body {
   padding: 50px 24px;
 }
 
-.footer-container {
-  max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 40px;
-}
-
-.footer h4 {
-  color: var(--gold-warm);
-  margin-bottom: 12px;
-}
-
-.footer-copy {
-  font-size: 14px;
-  color: #aaa;
-}
 
 /* HR */
-hr {
-  border: none;
-  border-top: 1px solid #ddd;
-  max-width: 1200px;
-  margin: 80px auto;
-}
 
-#theme-toggle {
-  background: transparent;
-  border: 1px solid var(--gold-warm);
-  color: var(--gold-warm);
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-:root {
-  --red-main: #d32f2f;
-  --red-dark: #8b0000;
-  --black-main: #0b0b0b;
-  --white-soft: #f6f6f6;
-  --gold-warm: #c9a24d;
-
-  --bg-body: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
-  --bg-main: #f1f1f1;
-  --bg-card: #ffffff;
-  --text-main: #0b0b0b;
-}
 
 body[data-theme="dark"] {
+  --bg-body: #121212;
+  --bg-card: #1f1f1f;
+  --text-main: #f5f5f5;
+  --text-soft: #aaa;
+  --border-soft: #444;
+
   --bg-body: #121212;
   --bg-main: #181818;
   --bg-card: #1f1f1f;
@@ -351,10 +164,18 @@ body[data-theme="dark"] {
   padding: 0;
   box-sizing: border-box;
   font-family: 'Montserrat', sans-serif;
+
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* BODY */
 body {
+  background: var(--bg-body);
+  color: var(--text-main);
+
   background: var(--bg-body);
   color: var(--text-main);
   line-height: 1.75;
@@ -362,6 +183,9 @@ body {
 
 /* MAIN */
 main {
+  padding: 0;
+  /* overrides site.css main { padding: 100px 0; } for this page */
+
   background: var(--bg-main);
   padding: 100px 0;
 }
@@ -372,9 +196,21 @@ main {
       var(--green-main),
       var(--green-dark),
       var(--black-main));
+
+  background: linear-gradient(to right,
+      var(--green-main),
+      var(--green-dark),
+      var(--black-main));
 }
 
 .navdiv {
+  max-width: 1500px;
+  margin: auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   max-width: 1200px;
   margin: auto;
   padding: 18px 24px;
@@ -385,21 +221,28 @@ main {
 
 .logo {
   height: 48px;
+
+  height: 48px;
 }
 
 .nav-menu {
   list-style: none;
   display: flex;
   gap: 32px;
+
+  list-style: none;
+  display: flex;
+  gap: 32px;
 }
 
-.nav-menu li a {
-  text-decoration: none;
-  color: var(--white-soft);
-  font-weight: 500;
-}
 
 .nav-auth button {
+  background: transparent;
+  border: 1px solid var(--gold-warm);
+  color: var(--gold-warm);
+  padding: 6px 16px;
+  cursor: pointer;
+
   background: transparent;
   border: 1px solid var(--gold-warm);
   color: var(--gold-warm);
@@ -641,14 +484,26 @@ main {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 40px;
+
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
 }
 
 .footer h4 {
   color: var(--gold-warm);
   margin-bottom: 12px;
+
+  color: var(--gold-warm);
+  margin-bottom: 12px;
 }
 
 .footer-copy {
+  font-size: 14px;
+  color: #aaa;
+
   font-size: 14px;
   color: #aaa;
 }
@@ -660,10 +515,22 @@ hr {
   border-top: 1px solid #ddd;
   max-width: 1200px;
   margin: 80px auto;
+
+  border: none;
+  border-top: 1px solid #ddd;
+  max-width: 1200px;
+  margin: 80px auto;
 }
 
 /* DARK MODE BUTTON */
 #theme-toggle {
+  background: transparent;
+  border: 1px solid var(--gold-warm);
+  color: var(--gold-warm);
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+
   background: transparent;
   border: 1px solid var(--gold-warm);
   color: var(--gold-warm);
@@ -684,16 +551,6 @@ hr {
   margin-bottom: 16px;
 }
 
-.admin-title {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.1;
-}
-
-.admin-subtitle {
-  margin: 6px 0 0 0;
-  color: var(--text-muted);
-}
 
 .admin-toolbar-right {
   display: flex;
@@ -702,15 +559,12 @@ hr {
   flex-wrap: wrap;
 }
 
-.admin-date {
-  background: var(--bg-card);
-  color: var(--text);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 8px 10px;
-}
 
 .admin-grid {
+  flex: 1;
+  min-height: 0;
+  /* IMPORTANT for internal scroll areas */
+
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 16px;
@@ -739,20 +593,6 @@ hr {
   color: var(--text-muted);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: #ff4d4d;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-}
 
 .btn:hover {
   filter: brightness(1.03);
@@ -785,26 +625,6 @@ hr {
   color: red;
 }
 
-
-.booking-card {
-  display: grid;
-  grid-template-columns: 92px 1fr;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-main);
-}
-
-.booking-time {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-}
-
-.booking-name {
-  font-weight: 800;
-  margin-bottom: 2px;
-}
 
 .booking-meta {
   color: var(--text-muted);
@@ -840,12 +660,6 @@ hr {
   white-space: nowrap;
 }
 
-.month-grid-with-dow .dow {
-  text-align: center;
-  font-weight: 800;
-  color: var(--text-muted);
-  padding: 10px 0;
-}
 
 .date-cell.today {
   outline: 2px solid #ff4d4d33;
@@ -903,16 +717,6 @@ hr {
   margin-bottom: 12px;
 }
 
-.icon-btn {
-  border: 1px solid var(--border-soft);
-  background: transparent;
-  color: var(--text);
-  border-radius: 12px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-}
 
 .modal-form .grid-2 {
   display: grid;
@@ -965,13 +769,6 @@ hr {
   border: 0;
 }
 
-.time-slot {
-  cursor: pointer;
-}
-
-.time-slot:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
 
 .date-cell[data-date] {
   cursor: pointer;
@@ -987,30 +784,83 @@ hr {
    ========================= */
 
 .calendar-wrapper {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+
+  /* Full viewport height minus navbar (adjust 70px if your navbar is different) */
+  min-height: calc(100vh - 70px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+
+  max-width: 100%;
+  margin: 0 auto 120px;
+  padding: 30px 24px;
+  background: var(--bg-card);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
   max-width: 1500px;
 }
 
 .admin-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.1;
+
   font-size: 34px;
 }
 
 .admin-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--text-muted);
+
   font-size: 16px;
 }
 
 .controls button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  font-weight: 600;
+
   font-size: 18px;
   padding: 12px 18px;
   border-radius: 16px;
 }
 
 .admin-date {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 8px 10px;
+
   font-size: 18px;
   padding: 10px 12px;
   border-radius: 14px;
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: #ff4d4d;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+
   font-size: 18px;
   padding: 12px 18px;
   border-radius: 16px;
@@ -1018,36 +868,58 @@ hr {
 
 /* Day timeline */
 .day-calendar {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: visible;
+
+  position: relative;
+  border-left: 1px solid var(--border-soft);
+  --booking-left: 60px;
+  /* where bookings start (time labels width) */
+  --booking-right: 10px;
+  /* NEW: reserved space for +X */
+  --usable-width: calc(100% - var(--booking-left) - var(--booking-right) - var(--overflow-gutter));
+  --overflow-outset: 10px;
+  /* adjust 40–80px to taste */
+
   font-size: 18px;
 }
 
-.time-slot {
-  min-height: 80px;
-  /* BIGGER rows */
-  font-size: 18px;
-  padding: 18px 16px;
-}
 
 /* Booking cards */
-.booking-card {
-  padding: 16px;
-  border-radius: 16px;
-}
+
 
 .booking-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+
   font-size: 18px;
 }
 
 .booking-name {
+  font-weight: 800;
+  margin-bottom: 2px;
+
   font-size: 18px;
 }
 
 /* Week view */
 .week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+
   gap: 14px;
 }
 
 .week-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px;
+  min-height: 200px;
+
   padding: 14px;
   border-radius: 16px;
 }
@@ -1058,11 +930,22 @@ hr {
 
 /* Month view */
 .month-grid-with-dow .dow {
+  text-align: center;
+  font-weight: 800;
+  color: var(--text-muted);
+  padding: 10px 0;
+
   font-size: 16px;
   padding: 12px 0;
 }
 
 .date-cell {
+  height: 120px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 6px;
+  font-size: 12px;
+
   min-height: 100px;
   /* BIGGER cells */
 }
@@ -1077,21 +960,6 @@ hr {
    Booking blocks in day timeline
    ========================= */
 
-.booking-block {
-  position: absolute;
-  left: 60px;
-  right: 10px;
-  background: linear-gradient(135deg, #ff4d4d22, #ff4d4d44);
-  border: 2px solid #ff4d4d;
-  border-radius: 8px;
-  padding: 6px 8px;
-  cursor: pointer;
-  pointer-events: auto;
-  overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  min-height: 40px;
-  z-index: 10;
-}
 
 .booking-block:hover {
   transform: translateY(-1px);
@@ -1169,48 +1037,30 @@ hr {
   width: calc((100% - 70px) / 4 - 5px);
 }
 
-.overflow-indicator {
-  right: calc(6px - var(--overflow-outset));
-  width: 52px;
-  pointer-events: auto;
-  cursor: pointer;
-  /* optional: a bit wider */
-}
-
-.booking-block-time {
-  font-size: 11px;
-  font-weight: 800;
-  color: #8b0000;
-  margin-bottom: 2px;
-  font-variant-numeric: tabular-nums;
-}
-
-.booking-block-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.booking-block-meta {
-  font-size: 11px;
-  color: var(--text-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* Time slot click area */
 .time-slot {
+  height: 60px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-left: 12px;
+  font-size: 13px;
+  color: var(--text-soft);
+
+  cursor: pointer;
+
+  min-height: 80px;
+  /* BIGGER rows */
+  font-size: 18px;
+  padding: 18px 16px;
+
   position: relative;
   cursor: pointer;
   user-select: none;
 }
 
 .time-slot:hover {
+  background: rgba(255, 255, 255, 0.04);
+
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -1239,6 +1089,27 @@ hr {
    ========================================================= */
 
 :root {
+  --red-main: #d32f2f;
+  --green-main: #42b648;
+  --green-dark: #1b5e20;
+  --red-dark: #8b0000;
+  --bg-body: #f4f4f4;
+  --bg-card: #ffffff;
+  --text-main: #0b0b0b;
+  --text-soft: #666;
+  --border-soft: #ddd;
+
+  --red-main: #d32f2f;
+  --red-dark: #8b0000;
+  --black-main: #0b0b0b;
+  --white-soft: #f6f6f6;
+  --gold-warm: #c9a24d;
+
+  --bg-body: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
+  --bg-main: #f1f1f1;
+  --bg-card: #ffffff;
+  --text-main: #0b0b0b;
+
   --tap-size-admin: 52px;
   /* slightly bigger in admin */
   --focus-ring-admin: 0 0 0 3px rgba(201, 162, 77, 0.60);
@@ -1246,6 +1117,14 @@ hr {
 
 /* Bigger admin nav links (admin menu links are plain <a>) */
 .nav-menu li a {
+  text-decoration: none;
+  color: var(--white-soft);
+  font-weight: 500;
+
+  text-decoration: none;
+  color: var(--white-soft);
+  font-weight: 500;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1293,6 +1172,15 @@ textarea {
 
 /* Make any icon buttons easier (modal close, etc.) */
 .icon-btn {
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+
   width: var(--tap-size-admin);
   height: var(--tap-size-admin);
   border-radius: 999px;
@@ -1734,29 +1622,23 @@ textarea {
    Overflow indicator for bookings beyond 4 lanes
    ========================================================================== */
 
-.overflow-indicator {
-  position: absolute;
-  right: 5px;
-  width: 45px;
-  background: linear-gradient(135deg, #ff4d4d, #d32f2f);
-  border: 2px solid #8b0000;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
-  pointer-events: none;
-  z-index: 5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
 
 /* ==========================================================================
    Booking cards clickable styling
    ========================================================================== */
 
 .booking-card {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-main);
+
+  padding: 16px;
+  border-radius: 16px;
+
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -1779,6 +1661,28 @@ textarea {
 
 /* Push +X outside to the right */
 .overflow-indicator {
+  right: calc(6px - var(--overflow-outset));
+  width: 52px;
+  pointer-events: auto;
+  cursor: pointer;
+  /* optional: a bit wider */
+
+  position: absolute;
+  right: 5px;
+  width: 45px;
+  background: linear-gradient(135deg, #ff4d4d, #d32f2f);
+  border: 2px solid #8b0000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
   right: 24px;
   /* anchor point */
   transform: translateX(calc(100% + 12px));
@@ -1787,6 +1691,20 @@ textarea {
 
 /* Put time + name on the same row, meta on the next row */
 .booking-block {
+  position: absolute;
+  left: 60px;
+  right: 10px;
+  background: linear-gradient(135deg, #ff4d4d22, #ff4d4d44);
+  border: 2px solid #ff4d4d;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-height: 40px;
+  z-index: 10;
+
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas:
@@ -1797,21 +1715,21 @@ textarea {
   align-content: start;
 }
 
-.booking-block-time {
-  grid-area: time;
-  margin: 0;
-}
 
 .booking-block-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   grid-area: name;
   margin: 0;
   min-width: 0;
 }
 
-.booking-block-meta {
-  grid-area: meta;
-  margin: 0;
-}
 
 /* One-line header inside booking block so name doesn't get clipped */
 .booking-block-time,
@@ -1822,11 +1740,29 @@ textarea {
 }
 
 .booking-block-time {
+  font-size: 11px;
+  font-weight: 800;
+  color: #8b0000;
+  margin-bottom: 2px;
+  font-variant-numeric: tabular-nums;
+
+  grid-area: time;
+  margin: 0;
+
   margin-right: 8px;
 }
 
 /* Meta line gets clipped in short blocks; hide it to prioritize navigation */
 .booking-block-meta {
+  font-size: 11px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  grid-area: meta;
+  margin: 0;
+
   display: none;
 }
 
