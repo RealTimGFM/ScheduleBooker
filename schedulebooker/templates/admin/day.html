@@ -67,7 +67,14 @@
         <p class="muted">No bookings for this day.</p>
         {% else %}
         <div class="booking-list">
+          {% set ns = namespace(hour=None) %}
           {% for b in bookings %}
+          {% set hour = b.start_time[11:13] %}
+          {% if hour != ns.hour %}
+          <div class="booking-hour-heading">Bookings for {{ hour }}:00</div>
+          {% set ns.hour = hour %}
+          {% endif %}
+
           <div class="booking-card" data-booking-id="{{ b.id }}">
             <div class="booking-time">
               {{ b.start_time[11:16] }}{% if b.end_time %}–{{ b.end_time[11:16] }}{% endif %}
@@ -75,8 +82,8 @@
             <div class="booking-main">
               <div class="booking-name">{{ b.customer_name }}</div>
               <div class="booking-meta">
-                {% if b.service_name %}{{ b.service_name }}{% elif b.service_id %}Service #{{ b.service_id }}{% else
-                %}Service (unspecified){% endif %}
+                {% if b.service_name %}{{ b.service_name }}{% elif b.service_id %}Service #{{ b.service_id }}{% else %}
+                Service (unspecified){% endif %}
                 ·
                 {% if b.barber_name %}{{ b.barber_name }}{% elif b.barber_id %}Barber #{{ b.barber_id }}{% else %}Any
                 barber{% endif %}
@@ -86,6 +93,7 @@
           </div>
           {% endfor %}
         </div>
+
         {% endif %}
       </aside>
     </div>
