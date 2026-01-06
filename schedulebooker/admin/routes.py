@@ -5,6 +5,7 @@ import secrets
 import sqlite3
 import time as pytime
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from flask import jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
@@ -16,7 +17,11 @@ from werkzeug.security import (
 from ..sqlite_db import execute_db, query_db
 from . import admin_bp
 
-DAY_START_HOUR = 9
+SHOP_TIMEZONE = ZoneInfo("America/Toronto")
+OPEN = time(11, 0)
+LAST_END_TIME = time(18, 30)
+
+DAY_START_HOUR = 11  # inclusive label (11:00)
 DAY_END_HOUR = 19  # inclusive label (19:00)
 
 # Admin security / UX
@@ -254,15 +259,20 @@ def _validate_shop_hours(day: date, start_t: time, end_t: time) -> str | None:
     if day.weekday() == 0:
         return "Shop is closed on Monday."
 
-    # Shop hours: 11:00-19:00
-    shop_open = time(11, 0)
-    shop_close = time(19, 0)
+    # Check if booking is in the past (Montreal timezone)
+    now = datetime.now(SHOP_TIMEZONE)
+    booking_datetime = datetime.combine(day, start_t, tzinfo=SHOP_TIMEZONE)
 
-    if start_t < shop_open or start_t >= shop_close:
+    if booking_datetime < now:
+        return "Cannot book in the past."
+
+    # Shop hours: start must be >= 11:00 and < 19:00
+    if start_t < OPEN or start_t >= time(19, 0):
         return "Start time must be between 11:00 and 19:00."
 
-    if end_t > shop_close:
-        return f"Booking ends at {end_t.strftime('%H:%M')}, which is after closing time (19:00)."
+    # End time must be <= 18:30
+    if end_t > LAST_END_TIME:
+        return f"Booking ends at {end_t.strftime('%H:%M')}, but last appointment must end by 18:30."
 
     return None
 

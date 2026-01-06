@@ -14,18 +14,18 @@
   </div>
 </section>
 
-<div class="table-wrap">
-  <div class="table-card">
-    <h3>Upcoming</h3>
+<section class="container" style="margin-top: 28px;">
+  <div class="card">
+    <h2 class="subtitle">Upcoming</h2>
 
-    {% if appointments and appointments|length > 0 %}
-    <table>
+    {% if appointments and appointments|length %}
+    <table class="table">
       <thead>
         <tr>
-          <th>Start</th>
+          <th>Date/Time</th>
           <th>Name</th>
           <th>Service</th>
-          <th style="width: 90px;">Edit</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -34,8 +34,11 @@
           <td>{{ (a.start_time or a["start_time"] or "")|replace("T", " ") }}</td>
           <td>{{ a.customer_name or a["customer_name"] }}</td>
           <td>{{ a.service_name or a["service_name"] or "—" }}</td>
-          <td><a class="nav-link"
-              href="{{ url_for('appointments.edit_appointment', appointment_id=(a.id or a['id'])) }}">Edit</a></td>
+          <td>
+            <a class="nav-link" href="{{ url_for('appointments.edit_appointment', appt_id=(a.id or a['id'])) }}">
+              Edit
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -44,5 +47,5 @@
     <p>No appointments yet.</p>
     {% endif %}
   </div>
-</div>
+</section>
 {% endblock %}

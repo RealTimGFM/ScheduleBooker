@@ -58,7 +58,7 @@ body {
 
 main {
   background: var(--bg-main);
-  padding: 100px 0;
+  padding: 20px 0;
 }
 
 /* NAVBAR */
@@ -292,8 +292,8 @@ main {
 /* BOOKING SCHEDULE (date/barber/time) */
 .booking-layout-wrapper {
   max-width: 1200px;
-  margin: 120px auto 160px;
-  padding: 40px 32px;
+  margin: 50px auto 160px;
+  padding: 5px 32px;
   border-radius: 28px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
