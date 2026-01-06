@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from zoneinfo import ZoneInfo
 import sqlite3
 import time as pytime
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from flask import jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
@@ -302,9 +302,7 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
-    row = query_db(
-        "SELECT * FROM admin_users WHERE username = ?", (username,), one=True
-    )
+    row = query_db("SELECT * FROM admin_users WHERE username = ?", (username,), one=True)
     if not row or not check_password_hash(row["password_hash"], password):
         return render_or_json("admin/login.html", error="Invalid username/password")
 
@@ -346,12 +344,8 @@ def day():
         (_iso(start), _iso(end)),
     )
 
-    services = query_db(
-        "SELECT id, name, duration_min, price FROM services ORDER BY id ASC"
-    )
-    barbers = query_db(
-        "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC"
-    )
+    services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+    barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
 
     wk_start = _week_start_monday(selected_day)
     wk_end = wk_start + timedelta(days=7)
@@ -452,9 +446,7 @@ def day():
 @admin_bp.post("/book")
 def create_booking():
     if not require_admin():
-        return redirect(
-            url_for("admin.login", next=request.referrer or url_for("admin.day"))
-        )
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
 
     customer_name = (request.form.get("customer_name") or "").strip()
     customer_phone = (request.form.get("customer_phone") or "").strip()
@@ -479,12 +471,8 @@ def create_booking():
     hours_error = _validate_shop_hours(d, t, end_dt.time())
     if hours_error:
         # Return to day view with error
-        services = query_db(
-            "SELECT id, name, duration_min, price FROM services ORDER BY id ASC"
-        )
-        barbers = query_db(
-            "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC"
-        )
+        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
 
         return render_or_json(
             "admin/day.html",
@@ -538,13 +526,9 @@ def create_booking():
 @admin_bp.post("/book/<int:booking_id>/edit")
 def edit_booking(booking_id: int):
     if not require_admin():
-        return redirect(
-            url_for("admin.login", next=request.referrer or url_for("admin.day"))
-        )
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
 
-    booking = query_db(
-        "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-    )
+    booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
     if not booking:
         return redirect(url_for("admin.day"))
 
@@ -572,12 +556,8 @@ def edit_booking(booking_id: int):
     hours_error = _validate_shop_hours(d, t, end_dt.time())
     if hours_error:
         # Return to day view with error
-        services = query_db(
-            "SELECT id, name, duration_min, price FROM services ORDER BY id ASC"
-        )
-        barbers = query_db(
-            "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC"
-        )
+        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
+        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
 
         return render_or_json(
             "admin/day.html",
@@ -622,13 +602,9 @@ def edit_booking(booking_id: int):
 @admin_bp.post("/book/<int:booking_id>/delete")
 def delete_booking(booking_id: int):
     if not require_admin():
-        return redirect(
-            url_for("admin.login", next=request.referrer or url_for("admin.day"))
-        )
+        return redirect(url_for("admin.login", next=request.referrer or url_for("admin.day")))
 
-    booking = query_db(
-        "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-    )
+    booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
     if not booking:
         return redirect(url_for("admin.day"))
 
@@ -875,9 +851,7 @@ def services_edit(service_id: int):
 def services_hide(service_id: int):
     if not require_admin():
         return redirect(
-            url_for(
-                "admin.login", next=request.referrer or url_for("admin.services_list")
-            )
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
         )
 
     # soft delete = hide
@@ -889,9 +863,7 @@ def services_hide(service_id: int):
 def services_restore(service_id: int):
     if not require_admin():
         return redirect(
-            url_for(
-                "admin.login", next=request.referrer or url_for("admin.services_list")
-            )
+            url_for("admin.login", next=request.referrer or url_for("admin.services_list"))
         )
 
     execute_db("UPDATE services SET is_active = 1 WHERE id = ?", (service_id,))
@@ -1037,9 +1009,7 @@ def barbers_edit(barber_id: int):
 def barbers_hide(barber_id: int):
     if not require_admin():
         return redirect(
-            url_for(
-                "admin.login", next=request.referrer or url_for("admin.barbers_list")
-            )
+            url_for("admin.login", next=request.referrer or url_for("admin.barbers_list"))
         )
 
     execute_db("UPDATE barbers SET is_active = 0 WHERE id = ?", (barber_id,))
@@ -1050,9 +1020,7 @@ def barbers_hide(barber_id: int):
 def barbers_restore(barber_id: int):
     if not require_admin():
         return redirect(
-            url_for(
-                "admin.login", next=request.referrer or url_for("admin.barbers_list")
-            )
+            url_for("admin.login", next=request.referrer or url_for("admin.barbers_list"))
         )
 
     execute_db("UPDATE barbers SET is_active = 1 WHERE id = ?", (barber_id,))
@@ -1081,9 +1049,7 @@ def settings():
         _clear_admin_session()
         return redirect(url_for("admin.login"))
 
-    return render_or_json(
-        "admin/settings.html", admin=dict(admin), error=None, success=None
-    )
+    return render_or_json("admin/settings.html", admin=dict(admin), error=None, success=None)
 
 
 @admin_bp.post("/settings/profile")
@@ -1204,9 +1170,7 @@ def change_password():
 
     # Update password
     new_hash = generate_password_hash(new_password)
-    execute_db(
-        "UPDATE admin_users SET password_hash = ? WHERE id = ?", (new_hash, admin_id)
-    )
+    execute_db("UPDATE admin_users SET password_hash = ? WHERE id = ?", (new_hash, admin_id))
 
     # Fetch fresh admin data
     updated_admin = query_db(
@@ -1246,9 +1210,7 @@ def forgot_password():
             "SELECT * FROM admin_users WHERE LOWER(email) = ?", (identifier,), one=True
         )
     else:  # sms
-        admin = query_db(
-            "SELECT * FROM admin_users WHERE phone = ?", (identifier,), one=True
-        )
+        admin = query_db("SELECT * FROM admin_users WHERE phone = ?", (identifier,), one=True)
 
     # Always show success to prevent user enumeration
     if not admin:

@@ -1,5 +1,6 @@
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
