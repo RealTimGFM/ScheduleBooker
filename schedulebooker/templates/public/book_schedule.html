@@ -2,120 +2,135 @@
 {% block title %}Choose a time · ScheduleBooker{% endblock %}
 
 {% macro price_text(s) -%}
-  {%- if s.price_label -%}
-    {{ s.price_label }}
-  {%- else -%}
-    ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
-  {%- endif -%}
+{%- if s.price_label -%}
+{{ s.price_label }}
+{%- else -%}
+${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
+{%- endif -%}
 {%- endmacro %}
 
 {% block content %}
-  <div class="page-wrap">
-    <div class="booking-layout-wrapper">
-      <div class="booking-top">
-        <button class="back-btn" onclick="window.location.href='{{ url_for('public.services') }}'">← Back to services</button>
+<div class="page-wrap">
+  <div class="booking-layout-wrapper">
+    <div class="booking-top">
+      <a class="back-btn" href="{{ url_for('public.services') }}">← Back to services</a>
+    </div>
+
+    {% if not service %}
+    <div class="container" style="margin-bottom:0;">
+      <h2 class="title">Select a service first</h2>
+      <p class="intro-text">Go back to services and choose a service to book.</p>
+    </div>
+    {% else %}
+    <div class="container" style="margin-bottom:40px;">
+      <h2 class="title">{{ service.name }}</h2>
+      <p class="intro-text">
+        {{ service.category }} · {{ service.duration_min }} min · <strong>{{ price_text(service) }}</strong>
+      </p>
+    </div>
+
+    <!-- Auto-refresh selectors (no Update button) -->
+    <div class="booking-layout" style="margin-bottom: 26px;">
+      <div class="box">
+        <h4>Select a Date</h4>
+        <input type="date" id="date-select" value="{{ selected_date or '' }}" min="{{ min_date }}">
+
+        <p class="small" style="margin-top:10px;">Note: Monday is closed.</p>
       </div>
 
-      {% if not service %}
-        <div class="container" style="margin-bottom:0;">
-          <h2 class="title">Select a service first</h2>
-          <p class="intro-text">Go back to services and choose a service to book.</p>
-        </div>
-      {% else %}
-        <div class="container" style="margin-bottom:40px;">
-          <h2 class="title">{{ service.name }}</h2>
-          <p class="intro-text">
-            {{ service.category }} · {{ service.duration_min }} min · <strong>{{ price_text(service) }}</strong>
+      <div class="box">
+        <h4>Select a Barber</h4>
+        <select id="barber-select">
+          <option value="" {% if selected_barber_id is none %}selected{% endif %}>Choose a barber…</option>
+          {% for b in barbers %}
+          <option value="{{ b.id }}" {% if selected_barber_id==b.id %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+        <p class="small" style="margin-top:10px;">You must pick a barber before confirming a time.</p>
+      </div>
+
+      <div class="box">
+        <h4>Summary</h4>
+        <div class="summary">
+          <p><strong>Service:</strong> {{ service.name }}</p>
+          <p><strong>Date:</strong> <span id="summary-date">{{ selected_date or "—" }}</span></p>
+          <p>
+            <strong>Barber:</strong>
+            <span id="summary-barber">
+              {% if selected_barber_id %}
+              {% for b in barbers %}{% if b.id == selected_barber_id %}{{ b.name }}{% endif %}{% endfor %}
+              {% else %}
+              —
+              {% endif %}
+            </span>
           </p>
         </div>
+      </div>
 
-        <!-- GET: update date / barber selection -->
-        <div class="booking-layout" style="margin-bottom: 26px;">
-          <div class="box">
-            <h4>Select a Date</h4>
-            <form method="get" action="{{ url_for('public.book_schedule') }}">
-              <input type="hidden" name="service_id" value="{{ service.id }}">
-              <input type="date" name="date" value="{{ selected_date or '' }}">
-              <div style="margin-top:12px;">
-                <button class="primary-btn" type="submit">Update</button>
-              </div>
-            </form>
-            <p class="small" style="margin-top:10px;">
-              Note: Monday is closed.
-            </p>
+      <div class="box">
+        <h4>Pick a Time</h4>
+
+        <form method="post" action="{{ url_for('public.book_confirm') }}" id="time-form">
+          <input type="hidden" name="service_id" value="{{ service.id }}">
+          <input type="hidden" name="date" id="form-date" value="{{ selected_date or '' }}">
+          <input type="hidden" name="barber_id" id="form-barber" value="{{ selected_barber_id or '' }}">
+
+          <div class="time-grid">
+            {% for slot in time_slots %}
+            {% set disabled = (not slot.is_available) or (selected_barber_id is none) %}
+            <button type="submit" name="time" value="{{ slot.time }}" {% if disabled %}disabled{% endif %}
+              title="{% if selected_barber_id is none %}Select a barber first{% elif slot.reason %}{{ slot.reason }}{% else %}Available{% endif %}">
+              {{ slot.time }}
+              {% if slot.reason %}
+              <span class="small">({{ slot.reason }})</span>
+              {% endif %}
+            </button>
+            {% else %}
+            <button type="button" disabled>No time slots</button>
+            {% endfor %}
           </div>
 
-          <div class="box">
-            <h4>Select a Barber</h4>
-            <form method="get" action="{{ url_for('public.book_schedule') }}">
-              <input type="hidden" name="service_id" value="{{ service.id }}">
-              <input type="hidden" name="date" value="{{ selected_date or '' }}">
-              <select name="barber_id">
-                <option value="" {% if selected_barber_id is none %}selected{% endif %}>Choose a barber…</option>
-                {% for b in barbers %}
-                  <option value="{{ b.id }}" {% if selected_barber_id == b.id %}selected{% endif %}>{{ b.name }}</option>
-                {% endfor %}
-              </select>
-              <div style="margin-top:12px;">
-                <button class="primary-btn" type="submit">Update</button>
-              </div>
-            </form>
-            <p class="small" style="margin-top:10px;">
-              You must pick a barber before confirming a time.
-            </p>
-          </div>
-
-          <div class="box">
-            <h4>Summary</h4>
-            <div class="summary">
-              <p><strong>Service:</strong> {{ service.name }}</p>
-              <p><strong>Date:</strong> {{ selected_date or "—" }}</p>
-              <p>
-                <strong>Barber:</strong>
-                {% if selected_barber_id %}
-                  {% for b in barbers %}{% if b.id == selected_barber_id %}{{ b.name }}{% endif %}{% endfor %}
-                {% else %}
-                  —
-                {% endif %}
-              </p>
-            </div>
-          </div>
-
-          <div class="box">
-            <h4>Pick a Time</h4>
-
-            <form method="post" action="{{ url_for('public.book_confirm') }}">
-              <input type="hidden" name="service_id" value="{{ service.id }}">
-              <input type="hidden" name="date" value="{{ selected_date or '' }}">
-              <input type="hidden" name="barber_id" value="{{ selected_barber_id or '' }}">
-
-              <div class="time-grid">
-                {% for slot in time_slots %}
-                  {% set disabled = (not slot.is_available) or (selected_barber_id is none) %}
-                  <button
-                    type="submit"
-                    name="time"
-                    value="{{ slot.time }}"
-                    {% if disabled %}disabled{% endif %}
-                    title="{% if selected_barber_id is none %}Select a barber first{% elif slot.reason %}{{ slot.reason }}{% else %}Available{% endif %}"
-                  >
-                    {{ slot.time }}
-                    {% if slot.reason %}
-                      <span class="small">({{ slot.reason }})</span>
-                    {% endif %}
-                  </button>
-                {% else %}
-                  <button type="button" disabled>No time slots</button>
-                {% endfor %}
-              </div>
-
-              <p class="small" style="margin-top: 12px;">
-                Clicking an available time will take you to the confirmation form.
-              </p>
-            </form>
-          </div>
-        </div>
-      {% endif %}
+          <p class="small" style="margin-top: 12px;">
+            Clicking an available time will take you to the confirmation form.
+          </p>
+        </form>
+      </div>
     </div>
+    {% endif %}
   </div>
+</div>
+
+<script>
+  (function () {
+    const dateEl = document.getElementById("date-select");
+    const barberEl = document.getElementById("barber-select");
+    const serviceInput = document.querySelector("#time-form input[name='service_id']");
+
+    if (!dateEl || !barberEl || !serviceInput) return;
+
+    function refreshSchedule() {
+      const serviceId = serviceInput.value || "";
+      const date = dateEl.value || "";
+      const barberId = barberEl.value || "";
+
+      if (!serviceId) return;
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("service_id", serviceId);
+
+      if (date) url.searchParams.set("date", date);
+      else url.searchParams.delete("date");
+
+      if (barberId) url.searchParams.set("barber_id", barberId);
+      else url.searchParams.delete("barber_id");
+
+      if (url.toString() === window.location.href) return;
+      window.location.href = url.toString();
+    }
+
+    dateEl.addEventListener("change", refreshSchedule);
+    dateEl.addEventListener("input", refreshSchedule);
+    barberEl.addEventListener("change", refreshSchedule);
+  })();
+</script>
 {% endblock %}

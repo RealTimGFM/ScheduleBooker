@@ -54,22 +54,18 @@
       <ul class="nav-menu">
         <li><a href="{{ url_for('public.services') }}">Home</a></li>
         <li><a href="{{ url_for('public.services') }}#services">Service</a></li>
-
-        <!-- Keep your working URLs (no BuildError risk) -->
         <li><a href="/about">About Us</a></li>
         <li><a href="/contact">Contact</a></li>
 
-        <!-- Admin now shares exact same structure/CSS as the other nav items -->
-        <li><a href="{{ url_for('admin.home') }}">Admin</a></li>
-
         {% if session.get("user_id") %}
         <li><a href="{{ url_for('appointments.list_appointments') }}">My Appointments</a></li>
+        {% else %}
+        <li><a href="{{ url_for('admin.home') }}">Admin</a></li>
         {% endif %}
       </ul>
 
       <div class="nav-auth">
         {% if session.get("user_id") %}
-        <a class="nav-link" href="{{ url_for('appointments.list_appointments') }}">My appointments</a>
         <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
         <a class="nav-link" href="{{ url_for('auth.signup') }}">Sign up</a>
@@ -86,12 +82,27 @@
   </nav>
 
   <main>
+    {# Existing inline error support #}
     {% if error %}
-    <div class="alert" role="alert"><strong>Note:</strong> {{ error }}</div>
+    <div class="alert alert-error" role="alert"><strong>Note:</strong> {{ error }}</div>
     {% endif %}
+
+    {# Flash messages (success/fail) #}
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    {% if category == "success" %}
+    <div class="alert alert-success" role="alert">{{ message }}</div>
+    {% else %}
+    <div class="alert alert-error" role="alert">{{ message }}</div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     {% block content %}{% endblock %}
   </main>
+
 
   <footer class="footer" id="footer">
     <div class="footer-container">

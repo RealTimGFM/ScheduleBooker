@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import secrets
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
-from flask import jsonify, redirect, render_template, request, session
+from flask import flash, jsonify, redirect, render_template, request, session
 from jinja2 import TemplateNotFound
 
 from ..sqlite_db import execute_db, query_db
 from . import public_bp
 
-SHOP_CAPACITY_PER_SLOT = 3  # safe default; can be changed later
+SHOP_CAPACITY_PER_SLOT = 2  # Public capacity limit
+SHOP_TIMEZONE = ZoneInfo("America/Toronto")  # Montreal timezone
 OPEN = time(11, 0)
 CLOSE = time(19, 0)
-MAX_BOOKINGS_PER_DAY_MESSAGE = "If you want more than 2 bookings in a day, contact the barber."
+LAST_END_TIME = time(18, 30)  # Last appointment must END by 18:30
+MAX_BOOKINGS_PER_DAY_MESSAGE = (
+    "If you want more than 2 bookings in a day, contact the barber."
+)
 
 
 def render_or_json(template_name: str, **ctx):
@@ -22,9 +27,11 @@ def render_or_json(template_name: str, **ctx):
         return jsonify({"template": template_name, "context": ctx})
 
 
-def _parse_date_or_default(date_str: str | None) -> tuple[str, date] | tuple[None, None]:
+def _parse_date_or_default(
+    date_str: str | None,
+) -> tuple[str, date] | tuple[None, None]:
     if not date_str:
-        d = datetime.now().date()
+        d = datetime.now(SHOP_TIMEZONE).date()
         return d.isoformat(), d
     try:
         d = date.fromisoformat(date_str)
@@ -34,10 +41,18 @@ def _parse_date_or_default(date_str: str | None) -> tuple[str, date] | tuple[Non
 
 
 def _iso(dt: datetime) -> str:
-    return dt.isoformat(timespec="seconds")
+    return dt.replace(microsecond=0).isoformat(timespec="seconds")
 
 
-def _overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
+def _floor_to_minute(dt: datetime) -> datetime:
+    """Normalize datetimes to minute precision (drop seconds/microseconds)."""
+    return dt.replace(second=0, microsecond=0)
+
+
+
+def _overlaps(
+    a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime
+) -> bool:
     return a_start < b_end and a_end > b_start
 
 
@@ -54,7 +69,9 @@ def _load_services_split():
 
 
 def _load_active_barbers():
-    rows = query_db("SELECT id, name, is_active FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+    rows = query_db(
+        "SELECT id, name, is_active FROM barbers WHERE is_active = 1 ORDER BY name ASC"
+    )
     return [dict(r) for r in rows]
 
 
@@ -73,23 +90,48 @@ def _load_bookings_for_day(day: date):
     day_end = day_start + timedelta(days=1)
 
     rows = query_db(
-        "SELECT id, barber_id, service_id, start_time, end_time, status, customer_phone, customer_email "
-        "FROM appointments "
-        "WHERE status != 'cancelled' AND start_time >= ? AND start_time < ?",
+        """
+        SELECT id, barber_id, service_id, start_time, end_time, status, customer_phone, customer_email, user_id
+        FROM appointments
+        WHERE status != 'cancelled' AND start_time >= ? AND start_time < ?
+        """,
         (_iso(day_start), _iso(day_end)),
     )
     return [dict(r) for r in rows]
 
 
+def _validate_shop_hours_and_past(day: date, start_t: time, end_t: time) -> str | None:
+    """
+    Shared validation: shop hours, Monday closed, end_time <= 18:30, no past bookings.
+    Returns error message or None.
+    """
+    # Monday closed
+    if day.weekday() == 0:
+        return "Shop is closed on Monday."
+
+    # Check if booking is in the past (shop timezone) — minute precision
+    now = _floor_to_minute(datetime.now(SHOP_TIMEZONE))
+    booking_datetime = _floor_to_minute(datetime.combine(day, start_t, tzinfo=SHOP_TIMEZONE))
+
+    if booking_datetime < now:
+        return "Cannot book in the past."
+
+    # Shop hours: start must be >= 11:00 and < 19:00
+    if start_t < OPEN or start_t >= CLOSE:
+        return f"Start time must be between {OPEN.strftime('%H:%M')} and {CLOSE.strftime('%H:%M')}."
+
+    # End time must be <= 18:30
+    if end_t > LAST_END_TIME:
+        return f"Booking ends at {end_t.strftime('%H:%M')}, but last appointment must end by {LAST_END_TIME.strftime('%H:%M')}."
+
+    return None
+
+
 def _build_time_slots(
     day: date, duration_min: int, barbers: list[dict], selected_barber_id: int | None
 ):
-    # Monday closed (weekday: Mon=0)
-    OPEN = time(11, 0)
-    CLOSE = time(19, 0)
-
+    # Monday closed
     if day.weekday() == 0:
-        # still produce the grid so UI can show it greyed out
         slots = []
         t = datetime.combine(day, OPEN)
         end = datetime.combine(day, CLOSE)
@@ -106,7 +148,7 @@ def _build_time_slots(
 
     bookings = _load_bookings_for_day(day)
 
-    # Build service duration lookup for bookings that have missing end_time
+    # Build service duration lookup for bookings
     svc_rows = query_db("SELECT id, duration_min FROM services")
     svc_duration = {r["id"]: r["duration_min"] for r in svc_rows}
 
@@ -125,52 +167,45 @@ def _build_time_slots(
         else:
             en = st + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
-        parsed.append(
-            {
-                "barber_id": bk.get("barber_id"),
-                "start": st,
-                "end": en,
-            }
-        )
+        parsed.append({"barber_id": bk.get("barber_id"), "start": st, "end": en})
 
-    # effective shop cap cannot exceed number of active barbers
     effective_shop_cap = (
         min(SHOP_CAPACITY_PER_SLOT, len(active_barber_ids)) if active_barber_ids else 0
     )
 
     slots = []
     cursor = datetime.combine(day, OPEN)
-    last_start = datetime.combine(day, CLOSE) - timedelta(minutes=duration_min)
+    last_start = datetime.combine(day, LAST_END_TIME) - timedelta(minutes=duration_min)
+
+    now = datetime.now(SHOP_TIMEZONE).replace(second=0, microsecond=0)
 
     while cursor <= last_start:
         slot_start = cursor
         slot_end = cursor + timedelta(minutes=duration_min)
 
-        # count overlaps shop-wide
+        # Check if slot is in the past (minute precision, shop timezone)
+        slot_datetime = slot_start.replace(tzinfo=SHOP_TIMEZONE).replace(second=0, microsecond=0)
+        if slot_datetime < now:
+            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Past"})
+            cursor += timedelta(minutes=30)
+            continue
+
+        # Count overlaps shop-wide
         shop_overlaps = 0
         for p in parsed:
             if _overlaps(p["start"], p["end"], slot_start, slot_end):
                 shop_overlaps += 1
 
         if effective_shop_cap == 0:
-            slots.append(
-                {
-                    "time": slot_start.strftime("%H:%M"),
-                    "is_available": False,
-                    "reason": "No barbers",
-                }
-            )
+            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "No barbers"})
             cursor += timedelta(minutes=30)
             continue
 
         if shop_overlaps >= effective_shop_cap:
-            slots.append(
-                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"}
-            )
+            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"})
             cursor += timedelta(minutes=30)
             continue
 
-        # barber-specific availability
         def barber_free(bid: int) -> bool:
             for p in parsed:
                 if p["barber_id"] == bid and _overlaps(p["start"], p["end"], slot_start, slot_end):
@@ -179,27 +214,14 @@ def _build_time_slots(
 
         if selected_barber_id is not None:
             ok = barber_free(selected_barber_id)
-            slots.append(
-                {
-                    "time": slot_start.strftime("%H:%M"),
-                    "is_available": ok,
-                    "reason": None if ok else "Booked",
-                }
-            )
+            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": ok, "reason": None if ok else "Booked"})
         else:
             ok_any = any(barber_free(bid) for bid in active_barber_ids)
-            slots.append(
-                {
-                    "time": slot_start.strftime("%H:%M"),
-                    "is_available": ok_any,
-                    "reason": None if ok_any else "Booked",
-                }
-            )
+            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": ok_any, "reason": None if ok_any else "Booked"})
 
         cursor += timedelta(minutes=30)
 
     return slots
-
 
 def _load_barber(barber_id: int):
     row = query_db(
@@ -223,35 +245,84 @@ def _parse_time_hhmm(time_str: str | None) -> time | None:
     if not time_str:
         return None
     try:
-        t = time.fromisoformat(time_str)  # accepts HH:MM
+        t = time.fromisoformat(time_str)
         return time(t.hour, t.minute)
     except ValueError:
         return None
 
 
-def _validate_public_booking(service: dict, barber: dict, day: date, start_t: time):
+def _validate_public_booking(
+    service: dict,
+    barber: dict,
+    day: date,
+    start_t: time,
+    user_id: int | None,
+    booking_id: int | None = None,
+):
+    """
+    Public booking validation:
+    - Shop hours, Monday, end_time <= 18:30, no past
+    - User cannot have overlapping appointments
+    - User cannot exceed 2 appointments per day
+    - Shop capacity (max 2 concurrent)
+    """
     duration_min = int(service.get("duration_min") or 30)
-
-    if day.weekday() == 0:
-        return None, None, "Closed (Monday)"
-
-    if start_t.minute not in (0, 30):
-        return None, None, "Time must be on a 30-minute grid (e.g., 11:00, 11:30)."
-
     start_dt = datetime.combine(day, start_t)
     end_dt = start_dt + timedelta(minutes=duration_min)
 
-    open_dt = datetime.combine(day, OPEN)
-    close_dt = datetime.combine(day, CLOSE)
-    if start_dt < open_dt or end_dt > close_dt:
-        return None, None, "Outside shop hours (Tue–Sun 11:00–19:00)."
+    # Validate shop hours and past
+    hours_error = _validate_shop_hours_and_past(day, start_t, end_dt.time())
+    if hours_error:
+        return None, None, hours_error
 
-    # overlap check
+    # Get all bookings for the day
     existing = _load_bookings_for_day(day)
     svc_rows = query_db("SELECT id, duration_min FROM services")
     svc_duration = {r["id"]: r["duration_min"] for r in svc_rows}
 
+    # Check user constraints (if logged in)
+    if user_id:
+        user_bookings_today = [
+            b
+            for b in existing
+            if b.get("user_id") == user_id and (not booking_id or b["id"] != booking_id)
+        ]
+
+        # Check daily max (2 appointments)
+        if len(user_bookings_today) >= 2:
+            return None, None, MAX_BOOKINGS_PER_DAY_MESSAGE
+
+        # Check for overlapping appointments for this user
+        for bk in user_bookings_today:
+            try:
+                bk_start = datetime.fromisoformat(bk["start_time"])
+            except Exception:
+                continue
+
+            if bk.get("end_time"):
+                try:
+                    bk_end = datetime.fromisoformat(bk["end_time"])
+                except Exception:
+                    bk_end = bk_start + timedelta(
+                        minutes=svc_duration.get(bk.get("service_id"), 30)
+                    )
+            else:
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
+
+            if _overlaps(bk_start, bk_end, start_dt, end_dt):
+                return (
+                    None,
+                    None,
+                    "You already have an appointment at this time. Cannot double-book.",
+                )
+
+    # Check barber overlap
     for bk in existing:
+        if booking_id and bk["id"] == booking_id:
+            continue
+
         if bk.get("barber_id") != barber["id"]:
             continue
 
@@ -264,12 +335,49 @@ def _validate_public_booking(service: dict, barber: dict, day: date, start_t: ti
             try:
                 bk_end = datetime.fromisoformat(bk["end_time"])
             except Exception:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
         else:
-            bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+            bk_end = bk_start + timedelta(
+                minutes=svc_duration.get(bk.get("service_id"), 30)
+            )
 
         if _overlaps(bk_start, bk_end, start_dt, end_dt):
-            return None, None, "That time is no longer available. Please choose another slot."
+            return (
+                None,
+                None,
+                "That time is no longer available. Please choose another slot.",
+            )
+
+    # Check shop capacity (public bookings only, max 2 concurrent)
+    concurrent_count = 0
+    for bk in existing:
+        if booking_id and bk["id"] == booking_id:
+            continue
+
+        try:
+            bk_start = datetime.fromisoformat(bk["start_time"])
+        except Exception:
+            continue
+
+        if bk.get("end_time"):
+            try:
+                bk_end = datetime.fromisoformat(bk["end_time"])
+            except Exception:
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
+        else:
+            bk_end = bk_start + timedelta(
+                minutes=svc_duration.get(bk.get("service_id"), 30)
+            )
+
+        if _overlaps(bk_start, bk_end, start_dt, end_dt):
+            concurrent_count += 1
+
+    if concurrent_count >= SHOP_CAPACITY_PER_SLOT:
+        return None, None, "This time slot is fully booked. Please choose another time."
 
     return start_dt, end_dt, None
 
@@ -325,7 +433,6 @@ def _normalize_contact(contact: str | None) -> tuple[str | None, str | None]:
         return None, None
     if "@" in c:
         return None, c.lower()
-    # phone
     digits = "".join(ch for ch in c if ch.isdigit())
     return (digits or None), None
 
@@ -372,6 +479,8 @@ def services():
 
 @public_bp.get("/book")
 def book_schedule():
+    min_date = datetime.now(SHOP_TIMEZONE).date().isoformat()
+
     service_id = request.args.get("service_id", type=int)
     selected_date_str = request.args.get("date")
     selected_barber_id = request.args.get("barber_id", type=int)
@@ -384,6 +493,7 @@ def book_schedule():
             selected_date=None,
             selected_barber_id=selected_barber_id,
             time_slots=[],
+            min_date=min_date,
             error="service_id is required",
         )
 
@@ -396,6 +506,7 @@ def book_schedule():
             selected_date=None,
             selected_barber_id=selected_barber_id,
             time_slots=[],
+            min_date=min_date,
             error="Invalid service_id",
         )
 
@@ -410,6 +521,7 @@ def book_schedule():
             selected_date=None,
             selected_barber_id=selected_barber_id,
             time_slots=[],
+            min_date=min_date,
             error="Invalid date format (expected YYYY-MM-DD)",
         )
 
@@ -423,6 +535,7 @@ def book_schedule():
         selected_date=selected_date_str,
         selected_barber_id=selected_barber_id,
         time_slots=time_slots,
+        min_date=min_date,
         error=None,
     )
 
@@ -534,7 +647,10 @@ def book_finish():
             error="Invalid date or time format.",
         )
 
-    start_dt, end_dt, err = _validate_public_booking(service, barber, day, start_t)
+    user_id = session.get("user_id")
+    start_dt, end_dt, err = _validate_public_booking(
+        service, barber, day, start_t, user_id
+    )
     if err:
         return render_or_json(
             "public/book_confirm.html",
@@ -546,20 +662,8 @@ def book_finish():
             error=err,
         )
 
-    if _count_bookings_for_contact(day, customer_phone, customer_email) >= 2:
-        return render_or_json(
-            "public/book_confirm.html",
-            service=service,
-            barber=barber,
-            date=date_str,
-            time=time_str,
-            duration_min=duration_min,
-            error=MAX_BOOKINGS_PER_DAY_MESSAGE,
-        )
-
     now = _iso(datetime.now())
     booking_code = _generate_booking_code()
-    user_id = session.get("user_id")  # guest allowed if None
 
     booking_id = execute_db(
         "INSERT INTO appointments "
@@ -582,7 +686,7 @@ def book_finish():
             now,
         ),
     )
-
+    flash("Booking confirmed.", "success")
     return redirect(f"/book/success?booking_id={booking_id}")
 
 
@@ -590,7 +694,9 @@ def book_finish():
 def book_success():
     booking_id = request.args.get("booking_id", type=int)
     if not booking_id:
-        return render_or_json("public/book_success.html", booking=None, error="Missing booking_id.")
+        return render_or_json(
+            "public/book_success.html", booking=None, error="Missing booking_id."
+        )
 
     row = query_db(
         "SELECT a.*, s.name AS service_name, b.name AS barber_name "
@@ -604,7 +710,9 @@ def book_success():
     booking = dict(row) if row else None
 
     if not booking:
-        return render_or_json("public/book_success.html", booking=None, error="Booking not found.")
+        return render_or_json(
+            "public/book_success.html", booking=None, error="Booking not found."
+        )
 
     return render_or_json("public/book_success.html", booking=booking, error=None)
 
@@ -643,7 +751,6 @@ def cancel_booking(booking_id: int):
     phone, email = _normalize_contact(contact)
 
     if not booking_code or (not phone and not email):
-        # re-render results with error
         bookings = _find_bookings_by_contact(phone, email)
         return render_or_json(
             "public/find_booking_results.html",
@@ -681,7 +788,6 @@ def cancel_booking(booking_id: int):
             error="Invalid contact or booking code.",
         )
 
-    # Mark cancelled (don’t delete)
     execute_db(
         "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
         (_iso(datetime.now()), booking_id),
