@@ -2,62 +2,201 @@
 {% block title %}Booking results · ScheduleBooker{% endblock %}
 
 {% block content %}
-  <section class="container">
-    <h1 class="title">Booking results</h1>
-    <p class="intro-text">Showing bookings for: <strong>{{ contact }}</strong></p>
-  </section>
+<section class="container">
+  <h1 class="title">Booking results</h1>
+  <p class="intro-text">Showing bookings for: <strong>{{ contact }}</strong></p>
+</section>
 
-  <div class="table-wrap">
-    <div class="table-card">
-      <h3>Your bookings</h3>
+<div class="table-wrap">
+  <div class="table-card">
+    <h3>Your bookings</h3>
 
-      {% if bookings and bookings|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Service</th>
-              <th>Barber</th>
-              <th>Status</th>
-              <th style="width: 220px;">Cancel</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for b in bookings %}
-              <tr>
-                <td>{{ (b.start_time or "")|replace("T", " ") }}</td>
-                <td>{{ b.service_name or "—" }}</td>
-                <td>{{ b.barber_name or "—" }}</td>
-                <td>
-                  {% if b.status == "booked" %}
-                    <span class="pill ok">booked</span>
-                  {% else %}
-                    <span class="pill bad">{{ b.status }}</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <form method="post" action="{{ url_for('public.cancel_booking', booking_id=b.id) }}">
-                    <input type="hidden" name="contact" value="{{ contact }}">
-                    <input type="text" name="booking_code" value="{{ b.booking_code or '' }}" placeholder="Booking code" style="width: 140px; padding: 8px; border-radius: 10px; border: 1px solid var(--border-soft); background: var(--bg-input); color: var(--text-main);" required>
-                    <button type="submit" class="nav-link" style="margin-left: 8px;" {% if b.status != "booked" %}disabled{% endif %}>
-                      Cancel
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div id="success-message"
+      style="display:none; padding:12px; background:rgba(46,125,50,0.1); border:1px solid rgba(46,125,50,0.25); border-radius:10px; margin-bottom:16px; color:var(--text-main);">
+      Booking cancelled successfully.
+    </div>
 
-        <p class="small" style="margin-top: 12px;">
-          Cancellation requires the correct booking code.
-        </p>
-      {% else %}
-        <p>No bookings found.</p>
-        <div style="margin-top: 14px;">
-          <a class="nav-link" href="{{ url_for('public.find_booking_page') }}">Try another search</a>
-        </div>
-      {% endif %}
+    <div id="error-message"
+      style="display:none; padding:12px; background:rgba(211,47,47,0.1); border:1px solid rgba(211,47,47,0.25); border-radius:10px; margin-bottom:16px; color:var(--text-main);">
+    </div>
+
+    {% if bookings and bookings|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Service</th>
+          <th>Barber</th>
+          <th>Status</th>
+          <th style="width: 140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookings-table">
+        {% for b in bookings %}
+        <tr id="booking-row-{{ b.id }}" data-booking-id="{{ b.id }}" data-start="{{ b.start_time }}">
+          <td>{{ (b.start_time or "")|replace("T", " ") }}</td>
+          <td>{{ b.service_name or "—" }}</td>
+          <td>{{ b.barber_name or "—" }}</td>
+          <td>
+            {% if b.status == "booked" %}
+            <span class="pill ok">booked</span>
+            {% else %}
+            <span class="pill bad">{{ b.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if b.status == "booked" %}
+            <button type="button" class="btn btn-outline btn-cancel" data-booking-id="{{ b.id }}"
+              data-phone="{{ contact }}" style="padding:6px 12px; font-size:14px;">
+              Cancel
+            </button>
+            {% else %}
+            <span class="small" style="color:var(--text-soft);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>No bookings found.</p>
+    <div style="margin-top: 14px;">
+      <a class="nav-link" href="{{ url_for('public.find_booking_page') }}">Try another search</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="cancel-modal" class="modal" aria-hidden="true"
+  style="display:none; position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center;">
+  <div class="modal-backdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.6);"></div>
+  <div class="modal-card"
+    style="position:relative; width:min(480px,92vw); background:var(--bg-card); border:1px solid var(--border-soft); border-radius:18px; padding:24px; box-shadow:0 22px 60px rgba(0,0,0,0.35);">
+    <h2 style="margin:0 0 12px 0; font-size:20px;">Cancel Booking?</h2>
+    <p style="margin:0 0 20px 0; color:var(--text-soft);">This action cannot be undone. The booking will be permanently
+      cancelled.</p>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" id="modal-cancel-btn" class="btn btn-outline">No, keep it</button>
+      <button type="button" id="modal-confirm-btn" class="btn" style="background:var(--red-main);">Yes, cancel
+        booking</button>
     </div>
   </div>
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('cancel-modal');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+    const successMsg = document.getElementById('success-message');
+    const errorMsg = document.getElementById('error-message');
+
+    let currentBookingId = null;
+    let currentPhone = null;
+
+    // Check eligibility (client-side hint only, server enforces)
+    function isEligibleForCancellation(startTime) {
+      const now = new Date();
+      const start = new Date(startTime);
+      const diffMinutes = (start - now) / 1000 / 60;
+
+      return start > now && diffMinutes >= 30;
+    }
+
+    // Open modal
+    function openModal(bookingId, phone) {
+      currentBookingId = bookingId;
+      currentPhone = phone;
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    // Close modal
+    function closeModal() {
+      currentBookingId = null;
+      currentPhone = null;
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    // Show success message
+    function showSuccess() {
+      successMsg.style.display = 'block';
+      errorMsg.style.display = 'none';
+      setTimeout(() => { successMsg.style.display = 'none'; }, 5000);
+    }
+
+    // Show error message
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+      successMsg.style.display = 'none';
+    }
+
+    // Cancel button clicks
+    document.querySelectorAll('.btn-cancel').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const bookingId = this.dataset.bookingId;
+        const phone = this.dataset.phone;
+        const row = document.getElementById(`booking-row-${bookingId}`);
+        const startTime = row ? row.dataset.start : null;
+
+        // Client-side check (server will enforce anyway)
+        if (startTime && !isEligibleForCancellation(startTime)) {
+          showError('Cannot cancel: booking is in the past or within 30 minutes of start time.');
+          return;
+        }
+
+        openModal(bookingId, phone);
+      });
+    });
+
+    // Modal cancel
+    modalCancelBtn.addEventListener('click', closeModal);
+
+    // Modal backdrop click
+    modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+    // Modal confirm
+    modalConfirmBtn.addEventListener('click', async function () {
+      if (!currentBookingId || !currentPhone) return;
+
+      try {
+        const response = await fetch(`/api/booking/${currentBookingId}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone })
+        });
+
+        const data = await response.json();
+
+        closeModal();
+
+        if (data.ok) {
+          // Remove row from DOM
+          const row = document.getElementById(`booking-row-${currentBookingId}`);
+          if (row) {
+            row.style.transition = 'opacity 0.3s ease';
+            row.style.opacity = '0';
+            setTimeout(() => row.remove(), 300);
+          }
+          showSuccess();
+        } else {
+          showError(data.error || 'Cancellation failed. Please try again.');
+        }
+      } catch (error) {
+        closeModal();
+        showError('Network error. Please check your connection and try again.');
+      }
+    });
+
+    // ESC key closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeModal();
+      }
+    });
+  })();
+</script>
 {% endblock %}

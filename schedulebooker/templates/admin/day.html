@@ -66,7 +66,7 @@
         {% if bookings|length == 0 %}
         <p class="muted">No bookings for this day.</p>
         {% else %}
-        <div class="booking-list">
+        <div class="booking-list" id="bookings-list">
           {% set ns = namespace(hour=None) %}
           {% for b in bookings %}
           {% set hour = b.start_time[11:13] %}
@@ -93,8 +93,15 @@
           </div>
           {% endfor %}
         </div>
-
         {% endif %}
+
+        <!-- Cancellations Section -->
+        <div style="margin-top:32px; padding-top:24px; border-top:1px solid var(--border-soft);">
+          <h2 class="panel-title">Cancellations for {{ date }}</h2>
+          <div id="cancellations-list">
+            <p class="muted">No cancellations yet.</p>
+          </div>
+        </div>
       </aside>
     </div>
   </section>
