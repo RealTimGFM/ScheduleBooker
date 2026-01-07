@@ -58,7 +58,11 @@ def get_db():
     if "db" not in g:
         # IMPORTANT: compute from *current* DATABASE (tests override DATABASE after create_app()).
         database = current_app.config.get("DATABASE", "appointments.db")
-        db_path = database if os.path.isabs(database) else os.path.join(current_app.instance_path, database)
+        db_path = (
+            database
+            if os.path.isabs(database)
+            else os.path.join(current_app.instance_path, database)
+        )
 
         # Keep DATABASE_PATH updated for debugging/visibility
         current_app.config["DATABASE_PATH"] = db_path

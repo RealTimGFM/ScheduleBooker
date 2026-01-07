@@ -7,8 +7,7 @@ import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import jsonify, redirect, render_template, request, session, url_for, flash
-
+from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
