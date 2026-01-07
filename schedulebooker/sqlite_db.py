@@ -56,10 +56,17 @@ def _ensure_admin_settings_columns(db: sqlite3.Connection) -> None:
 
 def get_db():
     if "db" not in g:
-        db_path = current_app.config["DATABASE_PATH"]
+        # IMPORTANT: compute from *current* DATABASE (tests override DATABASE after create_app()).
+        database = current_app.config.get("DATABASE", "appointments.db")
+        db_path = database if os.path.isabs(database) else os.path.join(current_app.instance_path, database)
+
+        # Keep DATABASE_PATH updated for debugging/visibility
+        current_app.config["DATABASE_PATH"] = db_path
+
         g.db = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         g.db.row_factory = sqlite3.Row
         _ensure_runtime_migrations(g.db)
+
     return g.db
 
 

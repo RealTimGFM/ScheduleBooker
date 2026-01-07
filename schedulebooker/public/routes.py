@@ -15,7 +15,9 @@ SHOP_TIMEZONE = ZoneInfo("America/Toronto")  # Montreal timezone
 OPEN = time(11, 0)
 CLOSE = time(19, 0)
 LAST_END_TIME = time(18, 30)  # Last appointment must END by 18:30
-MAX_BOOKINGS_PER_DAY_MESSAGE = "If you want more than 2 bookings in a day, contact the barber."
+MAX_BOOKINGS_PER_DAY_MESSAGE = (
+    "If you want more than 2 bookings in a day, contact the barber."
+)
 
 
 def render_or_json(template_name: str, **ctx):
@@ -47,7 +49,9 @@ def _floor_to_minute(dt: datetime) -> datetime:
     return dt.replace(second=0, microsecond=0)
 
 
-def _overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
+def _overlaps(
+    a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime
+) -> bool:
     return a_start < b_end and a_end > b_start
 
 
@@ -64,7 +68,9 @@ def _load_services_split():
 
 
 def _load_active_barbers():
-    rows = query_db("SELECT id, name, is_active FROM barbers WHERE is_active = 1 ORDER BY name ASC")
+    rows = query_db(
+        "SELECT id, name, is_active FROM barbers WHERE is_active = 1 ORDER BY name ASC"
+    )
     return [dict(r) for r in rows]
 
 
@@ -104,7 +110,9 @@ def _validate_shop_hours_and_past(day: date, start_t: time, end_t: time) -> str 
 
     # Check if booking is in the past (shop timezone) — minute precision
     now = _floor_to_minute(datetime.now(SHOP_TIMEZONE))
-    booking_datetime = _floor_to_minute(datetime.combine(day, start_t, tzinfo=SHOP_TIMEZONE))
+    booking_datetime = _floor_to_minute(
+        datetime.combine(day, start_t, tzinfo=SHOP_TIMEZONE)
+    )
 
     if booking_datetime < now:
         return "Cannot book in the past."
@@ -181,7 +189,9 @@ def _build_time_slots(
         slot_end = cursor + timedelta(minutes=duration_min)
 
         # Check if slot is in the past (minute precision, shop timezone)
-        slot_datetime = slot_start.replace(tzinfo=SHOP_TIMEZONE).replace(second=0, microsecond=0)
+        slot_datetime = slot_start.replace(tzinfo=SHOP_TIMEZONE).replace(
+            second=0, microsecond=0
+        )
         if slot_datetime < now:
             slots.append(
                 {
@@ -223,7 +233,9 @@ def _build_time_slots(
 
         def barber_free(bid: int) -> bool:
             for p in parsed:
-                if p["barber_id"] == bid and _overlaps(p["start"], p["end"], slot_start, slot_end):
+                if p["barber_id"] == bid and _overlaps(
+                    p["start"], p["end"], slot_start, slot_end
+                ):
                     return False
             return True
 
@@ -335,7 +347,9 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
 
             if _overlaps(bk_start, bk_end, start_dt, end_dt):
                 return (
@@ -361,9 +375,13 @@ def _validate_public_booking(
             try:
                 bk_end = datetime.fromisoformat(bk["end_time"])
             except Exception:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
         else:
-            bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+            bk_end = bk_start + timedelta(
+                minutes=svc_duration.get(bk.get("service_id"), 30)
+            )
 
         if _overlaps(bk_start, bk_end, start_dt, end_dt):
             return (
@@ -387,9 +405,13 @@ def _validate_public_booking(
             try:
                 bk_end = datetime.fromisoformat(bk["end_time"])
             except Exception:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
         else:
-            bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+            bk_end = bk_start + timedelta(
+                minutes=svc_duration.get(bk.get("service_id"), 30)
+            )
 
         if _overlaps(bk_start, bk_end, start_dt, end_dt):
             concurrent_count += 1
@@ -666,7 +688,9 @@ def book_finish():
         )
 
     user_id = session.get("user_id")
-    start_dt, end_dt, err = _validate_public_booking(service, barber, day, start_t, user_id)
+    start_dt, end_dt, err = _validate_public_booking(
+        service, barber, day, start_t, user_id
+    )
     if err:
         return render_or_json(
             "public/book_confirm.html",
@@ -710,7 +734,9 @@ def book_finish():
 def book_success():
     booking_id = request.args.get("booking_id", type=int)
     if not booking_id:
-        return render_or_json("public/book_success.html", booking=None, error="Missing booking_id.")
+        return render_or_json(
+            "public/book_success.html", booking=None, error="Missing booking_id."
+        )
 
     row = query_db(
         "SELECT a.*, s.name AS service_name, b.name AS barber_name "
@@ -724,7 +750,9 @@ def book_success():
     booking = dict(row) if row else None
 
     if not booking:
-        return render_or_json("public/book_success.html", booking=None, error="Booking not found.")
+        return render_or_json(
+            "public/book_success.html", booking=None, error="Booking not found."
+        )
 
     return render_or_json("public/book_success.html", booking=booking, error=None)
 
@@ -876,7 +904,9 @@ def cancel_booking_api(booking_id: int):
     time_until_start = (booking_start - now).total_seconds() / 60
     if time_until_start < 30:
         return (
-            jsonify({"ok": False, "error": "Cannot cancel within 30 minutes of start time."}),
+            jsonify(
+                {"ok": False, "error": "Cannot cancel within 30 minutes of start time."}
+            ),
             400,
         )
 
@@ -884,10 +914,10 @@ def cancel_booking_api(booking_id: int):
     cancelled_at = _iso(datetime.now())
     execute_db(
         """
-        INSERT INTO cancellations 
+        INSERT INTO cancellations
         (booking_id, customer_name, customer_phone, customer_email,
-         barber_id, barber_name, service_id, service_name,
-         start_datetime, end_datetime, cancelled_at, cancelled_by)
+        barber_id, barber_name, service_id, service_name,
+        start_datetime, end_datetime, cancelled_at, cancelled_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
@@ -896,11 +926,11 @@ def cancel_booking_api(booking_id: int):
             booking["customer_phone"],
             booking["customer_email"],
             booking["barber_id"],
-            booking.get("barber_name"),
+            booking["barber_name"],
             booking["service_id"],
-            booking.get("service_name"),
+            booking["service_name"],
             booking["start_time"],
-            booking.get("end_time"),
+            booking["end_time"],
             cancelled_at,
             "customer",
         ),
