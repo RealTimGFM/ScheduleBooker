@@ -77,9 +77,11 @@
     dateInput.addEventListener("change", () => {
       const val = dateInput.value;
       const url = new URL(window.location.href);
+      url.pathname = "/admin/day";
       url.searchParams.set("date", val);
       window.location.href = url.toString();
     });
+
   }
 
   // ============ BOOKING BLOCKS POSITIONING ============
@@ -692,8 +694,10 @@
         const d = cell.dataset.date;
         if (!d) return;
         const url = new URL(window.location.href);
+        url.pathname = "/admin/day";
         url.searchParams.set("date", d);
         window.location.href = url.toString();
+
       });
     });
   }
@@ -725,7 +729,14 @@
         updateNowIndicator();
       }, 150);
     });
+    // At the end of the DOMContentLoaded callback, add:
+    // Start polling for updates
+    if (qs("#day-view")) {
+      startPolling();
+    }
 
+    // Stop polling when page unloads
+    window.addEventListener('beforeunload', stopPolling);
     // Update now indicator every minute
     setInterval(updateNowIndicator, 60 * 1000);
   });
@@ -743,4 +754,171 @@ function formatDisplayName(fullName) {
   if (first.length > MAX) return first.slice(0, MAX) + "…";
 
   return first;
+}
+
+// ============ POLLING FOR UPDATES ============
+let pollInterval = null;
+const POLL_INTERVAL_MS = 15000; // 15 seconds
+
+function startPolling() {
+  stopPolling(); // Clear any existing interval
+
+  pollInterval = setInterval(() => {
+    const dayView = qs("#day-view");
+    if (!dayView || !dayView.classList.contains("active")) {
+      return; // Only poll when day view is active
+    }
+
+    const dateInput = qs("#admin-date");
+    if (!dateInput || !dateInput.value) return;
+
+    fetchDaySnapshot(dateInput.value);
+  }, POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+async function fetchDaySnapshot(date) {
+  try {
+    const response = await fetch(`/admin/api/day-snapshot?date=${encodeURIComponent(date)}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (!data.ok) return;
+
+    updateBookingsList(data.bookings);
+    updateCancellationsList(data.cancellations);
+    updateBookingBlocks(data.bookings);
+  } catch (error) {
+    console.error('Polling error:', error);
+  }
+}
+
+function updateBookingsList(bookings) {
+  const container = qs("#bookings-list");
+  if (!container) return;
+
+  // Build new HTML
+  if (bookings.length === 0) {
+    container.innerHTML = '<p class="muted">No bookings for this day.</p>';
+    return;
+  }
+
+  let html = '';
+  let lastHour = null;
+
+  bookings.forEach(b => {
+    const hour = b.start_time.substring(11, 13);
+    if (hour !== lastHour) {
+      html += `<div class="booking-hour-heading">Bookings for ${hour}:00</div>`;
+      lastHour = hour;
+    }
+
+    const startTime = b.start_time.substring(11, 16);
+    const endTime = b.end_time ? `–${b.end_time.substring(11, 16)}` : '';
+    const serviceName = b.service_name || `Service #${b.service_id || '?'}`;
+    const barberName = b.barber_name || `Barber #${b.barber_id || 'Any'}`;
+    const statusBadge = b.status === 'cancelled' ? ' · <span class="pill bad">cancelled</span>' : '';
+
+    html += `
+      <div class="booking-card" data-booking-id="${b.id}">
+        <div class="booking-time">${startTime}${endTime}</div>
+        <div class="booking-main">
+          <div class="booking-name">${b.customer_name}</div>
+          <div class="booking-meta">${serviceName} · ${barberName}${statusBadge}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  // Re-attach click handlers for cards
+  qsa('.booking-card[data-booking-id]', container).forEach(card => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function () {
+      const id = this.dataset.bookingId;
+      const block = qs(`.booking-block[data-id="${id}"]`);
+      if (!block) return;
+
+      const data = {
+        id: block.dataset.id,
+        customer: block.dataset.customer,
+        phone: block.dataset.phone,
+        email: block.dataset.email,
+        serviceId: block.dataset.serviceId,
+        barberId: block.dataset.barberId,
+        date: block.dataset.start.slice(0, 10),
+        time: block.dataset.start.slice(11, 16),
+        notes: block.dataset.notes,
+      };
+
+      openModal("edit", data);
+    });
+  });
+}
+
+function updateCancellationsList(cancellations) {
+  const container = qs("#cancellations-list");
+  if (!container) return;
+
+  if (cancellations.length === 0) {
+    container.innerHTML = '<p class="muted">No cancellations yet.</p>';
+    return;
+  }
+
+  let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+
+  cancellations.forEach(c => {
+    const startTime = c.start_datetime.substring(11, 16);
+    const cancelledTime = c.cancelled_at.substring(11, 16);
+    const phone = c.customer_phone || 'N/A';
+
+    html += `
+      <div style="padding:10px 12px; border-radius:12px; border:1px solid var(--border-soft); background:rgba(211,47,47,0.08);">
+        <div style="font-weight:800; margin-bottom:4px;">${startTime} – ${c.customer_name}</div>
+        <div style="font-size:13px; color:var(--text-soft);">
+          ${c.service_name || 'Service'} · ${c.barber_name || 'Any barber'}<br>
+          Phone: ${phone}<br>
+          Cancelled: ${cancelledTime}
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function updateBookingBlocks(bookings) {
+  const container = qs("#booking-blocks");
+  if (!container) return;
+
+  // Get current block IDs
+  const currentIds = new Set(
+    qsa('.booking-block', container).map(el => el.dataset.id)
+  );
+
+  // Get new booking IDs
+  const newIds = new Set(bookings.map(b => String(b.id)));
+
+  // Remove blocks that no longer exist (cancelled bookings)
+  currentIds.forEach(id => {
+    if (!newIds.has(id)) {
+      const block = qs(`.booking-block[data-id="${id}"]`, container);
+      if (block) {
+        block.style.transition = 'opacity 0.3s ease';
+        block.style.opacity = '0';
+        setTimeout(() => block.remove(), 300);
+      }
+    }
+  });
+
+  // Re-position all blocks (in case new bookings were added)
+  setTimeout(() => positionBookingBlocks(), 400);
 }

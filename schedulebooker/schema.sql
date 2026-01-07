@@ -119,3 +119,28 @@ CREATE TABLE IF NOT EXISTS admin_reset_rate_limits (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_limit_admin_channel
   ON admin_reset_rate_limits(admin_user_id, channel);
+
+-- ============================================================
+-- CANCELLATIONS LOG (for admin visibility)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS cancellations (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id        INTEGER NOT NULL,
+  customer_name     TEXT NOT NULL,
+  customer_phone    TEXT,
+  customer_email    TEXT,
+  barber_id         INTEGER,
+  barber_name       TEXT,
+  service_id        INTEGER,
+  service_name      TEXT,
+  start_datetime    TEXT NOT NULL,
+  end_datetime      TEXT,
+  cancelled_at      TEXT NOT NULL,
+  cancelled_by      TEXT NOT NULL CHECK (cancelled_by IN ('customer', 'admin')),
+  
+  FOREIGN KEY (barber_id)  REFERENCES barbers(id),
+  FOREIGN KEY (service_id) REFERENCES services(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cancellation_date ON cancellations(start_datetime);
+CREATE INDEX IF NOT EXISTS idx_cancellation_cancelled_at ON cancellations(cancelled_at);

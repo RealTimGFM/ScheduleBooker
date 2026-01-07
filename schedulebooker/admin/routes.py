@@ -7,7 +7,7 @@ import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import jsonify, redirect, render_template, request, session, url_for
+from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
@@ -470,23 +470,8 @@ def create_booking():
     # VALIDATION: Check shop hours
     hours_error = _validate_shop_hours(d, t, end_dt.time())
     if hours_error:
-        # Return to day view with error
-        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
-        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
-
-        return render_or_json(
-            "admin/day.html",
-            date=d.isoformat(),
-            bookings=[],
-            services=[dict(r) for r in services],
-            barbers=[dict(r) for r in barbers],
-            week_days=[],
-            month_cells=[],
-            month_label="",
-            day_hours=list(range(DAY_START_HOUR, DAY_END_HOUR + 1)),
-            day_start_hour=DAY_START_HOUR,
-            error=hours_error,
-        )
+        flash(hours_error, "error")
+        return redirect(url_for("admin.day", date=d.isoformat()))
 
     booking_code = secrets.token_urlsafe(6)
     now = _iso(datetime.now())
@@ -555,23 +540,8 @@ def edit_booking(booking_id: int):
     # VALIDATION: Check shop hours
     hours_error = _validate_shop_hours(d, t, end_dt.time())
     if hours_error:
-        # Return to day view with error
-        services = query_db("SELECT id, name, duration_min, price FROM services ORDER BY id ASC")
-        barbers = query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY name ASC")
-
-        return render_or_json(
-            "admin/day.html",
-            date=d.isoformat(),
-            bookings=[],
-            services=[dict(r) for r in services],
-            barbers=[dict(r) for r in barbers],
-            week_days=[],
-            month_cells=[],
-            month_label="",
-            day_hours=list(range(DAY_START_HOUR, DAY_END_HOUR + 1)),
-            day_start_hour=DAY_START_HOUR,
-            error=hours_error,
-        )
+        flash(hours_error, "error")
+        return redirect(url_for("admin.day", date=d.isoformat()))
 
     execute_db(
         """
@@ -1370,3 +1340,56 @@ def reset_password():
     )
 
     return redirect(url_for("admin.login") + "?reset=success")
+
+
+@admin_bp.get("/api/day-snapshot")
+def day_snapshot():
+    """API endpoint for polling: returns bookings + cancellations for a date."""
+    if not require_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    date_str = request.args.get("date")
+    day = _parse_date(date_str)
+
+    if not day:
+        # Use shop timezone for "today" (consistent with the rest of your app)
+        day = datetime.now(SHOP_TIMEZONE).date()
+
+    # Get bookings
+    day_start = datetime.combine(day, time(0, 0))
+    day_end = day_start + timedelta(days=1)
+
+    bookings_rows = query_db(
+        """
+        SELECT a.*,
+               s.name AS service_name,
+               b.name AS barber_name
+        FROM appointments a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN barbers  b ON a.barber_id = b.id
+        WHERE a.start_time >= ? AND a.start_time < ?
+        ORDER BY a.start_time
+        """,
+        (_iso(day_start), _iso(day_end)),
+    )
+
+    # Get cancellations for this day
+    cancellations_rows = query_db(
+        """
+        SELECT id, booking_id, customer_name, customer_phone,
+               barber_name, service_name, start_datetime, cancelled_at
+        FROM cancellations
+        WHERE start_datetime >= ? AND start_datetime < ?
+        ORDER BY cancelled_at DESC
+        """,
+        (_iso(day_start), _iso(day_end)),
+    )
+
+    return jsonify(
+        {
+            "ok": True,
+            "date": day.isoformat(),
+            "bookings": [dict(r) for r in bookings_rows],
+            "cancellations": [dict(r) for r in cancellations_rows],
+        }
+    )

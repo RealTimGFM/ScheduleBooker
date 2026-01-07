@@ -130,7 +130,11 @@ def _build_time_slots(
         end = datetime.combine(day, CLOSE)
         while t < end:
             slots.append(
-                {"time": t.strftime("%H:%M"), "is_available": False, "reason": "Closed (Monday)"}
+                {
+                    "time": t.strftime("%H:%M"),
+                    "is_available": False,
+                    "reason": "Closed (Monday)",
+                }
             )
             t += timedelta(minutes=30)
         return slots
@@ -180,7 +184,11 @@ def _build_time_slots(
         slot_datetime = slot_start.replace(tzinfo=SHOP_TIMEZONE).replace(second=0, microsecond=0)
         if slot_datetime < now:
             slots.append(
-                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Past"}
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": False,
+                    "reason": "Past",
+                }
             )
             cursor += timedelta(minutes=30)
             continue
@@ -204,7 +212,11 @@ def _build_time_slots(
 
         if shop_overlaps >= effective_shop_cap:
             slots.append(
-                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"}
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": False,
+                    "reason": "Full",
+                }
             )
             cursor += timedelta(minutes=30)
             continue
@@ -810,3 +822,91 @@ def about_page():
 @public_bp.get("/contact")
 def contact_page():
     return redirect("/services#contact")
+
+
+@public_bp.post("/api/booking/<int:booking_id>/cancel")
+def cancel_booking_api(booking_id: int):
+    """API endpoint for customer cancellation with phone verification."""
+    data = request.get_json() or {}
+    phone = _normalize_phone(data.get("phone"))
+
+    if not phone:
+        return jsonify({"ok": False, "error": "Phone number is required."}), 400
+
+    # Find booking
+    booking = query_db(
+        """
+        SELECT a.*, s.name AS service_name, b.name AS barber_name
+        FROM appointments a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN barbers b ON a.barber_id = b.id
+        WHERE a.id = ? AND a.status = 'booked'
+        """,
+        (booking_id,),
+        one=True,
+    )
+
+    if not booking:
+        return (
+            jsonify({"ok": False, "error": "Booking not found or already cancelled."}),
+            404,
+        )
+
+    # Verify phone matches
+    if _normalize_phone(booking["customer_phone"]) != phone:
+        return (
+            jsonify({"ok": False, "error": "Phone number does not match booking."}),
+            403,
+        )
+
+    # Parse start time
+    try:
+        start_dt = datetime.fromisoformat(booking["start_time"])
+    except Exception:
+        return jsonify({"ok": False, "error": "Invalid booking date/time."}), 500
+
+    # Check if booking is in the past
+    now = _floor_to_minute(datetime.now(SHOP_TIMEZONE))
+    booking_start = _floor_to_minute(start_dt.replace(tzinfo=SHOP_TIMEZONE))
+
+    if booking_start < now:
+        return jsonify({"ok": False, "error": "Cannot cancel past bookings."}), 400
+
+    # Check if within 30 minutes
+    time_until_start = (booking_start - now).total_seconds() / 60
+    if time_until_start < 30:
+        return (
+            jsonify({"ok": False, "error": "Cannot cancel within 30 minutes of start time."}),
+            400,
+        )
+
+    # Insert cancellation record
+    cancelled_at = _iso(datetime.now())
+    execute_db(
+        """
+        INSERT INTO cancellations
+        (booking_id, customer_name, customer_phone, customer_email,
+        barber_id, barber_name, service_id, service_name,
+        start_datetime, end_datetime, cancelled_at, cancelled_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            booking_id,
+            booking["customer_name"],
+            booking["customer_phone"],
+            booking["customer_email"],
+            booking["barber_id"],
+            booking["barber_name"],
+            booking["service_id"],
+            booking["service_name"],
+            booking["start_time"],
+            booking["end_time"],
+            cancelled_at,
+            "customer",
+        ),
+    )
+
+    # Hard delete booking
+    execute_db("DELETE FROM appointments WHERE id = ?", (booking_id,))
+
+    return jsonify({"ok": True, "booking_id": booking_id}), 200
