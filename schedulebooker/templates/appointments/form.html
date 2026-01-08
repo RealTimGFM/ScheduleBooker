@@ -8,6 +8,7 @@
       <p class="form-desc">This is a simple demo page for the appointments blueprint.</p>
 
       <form class="booking-form" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="form-group">
           <label for="customer_name">Name</label>
           <input id="customer_name" name="customer_name" required value="{{ appointment['customer_name'] if appointment else '' }}">

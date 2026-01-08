@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-
+from ..extensions import limiter
 from flask import redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -17,7 +17,9 @@ def normalize_phone(phone: str | None) -> str:
 
 
 def _get_user_by_phone(phone_number: str):
-    return query_db("SELECT * FROM users WHERE phone_number = ?", (phone_number,), one=True)
+    return query_db(
+        "SELECT * FROM users WHERE phone_number = ?", (phone_number,), one=True
+    )
 
 
 @auth_bp.get("/login")
@@ -26,28 +28,35 @@ def login():
 
 
 @auth_bp.post("/login")
+@limiter.limit("30 per hour")
 def login_post():
     phone = normalize_phone(request.form.get("phone"))
     pin = (request.form.get("pin") or "").strip()
 
     if not phone:
-        return render_template("auth/login.html", error="Phone is required")
+        return render_template(
+            "auth/login.html", error="Invalid credentials"
+        )  # Generic
 
     if not _PIN_RE.match(pin):
-        return render_template("auth/login.html", error="PIN must be exactly 6 digits")
+        return render_template(
+            "auth/login.html", error="Invalid credentials"
+        )  # Generic
 
     row = _get_user_by_phone(phone)
+
+    # TIMING-SAFE: Always hash even if user doesn't exist
     if not row:
-        return render_template("auth/login.html", error="No account found. Please sign up first.")
+        # Use dummy hash to prevent timing attacks
+        check_password_hash("$pbkdf2-sha256$...", pin)  # Dummy
+        return render_template("auth/login.html", error="Invalid credentials")
 
     pw_hash = (row["password_hash"] or "").strip()
     if not pw_hash:
-        return render_template(
-            "auth/login.html", error="This account has no PIN yet. Please sign up."
-        )
+        return render_template("auth/login.html", error="Invalid credentials")
 
     if not check_password_hash(pw_hash, pin):
-        return render_template("auth/login.html", error="Invalid phone or PIN")
+        return render_template("auth/login.html", error="Invalid credentials")
 
     session["user_id"] = int(row["id"])
     return redirect(url_for("appointments.list_appointments"))

@@ -34,6 +34,7 @@
         </div>
 
         <form method="post" action="{{ url_for('admin.update_profile') }}" class="settings-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="settings-form-grid">
                 <div class="settings-field">
                     <label for="username">Username</label>
@@ -71,6 +72,7 @@
         </div>
 
         <form method="post" action="{{ url_for('admin.change_password') }}" class="settings-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="settings-form-grid">
                 <div class="settings-field">
                     <label for="current_password_change">Current Password</label>

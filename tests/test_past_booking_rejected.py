@@ -5,6 +5,15 @@ import pytest
 from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
 from schedulebooker.sqlite_db import get_db
+import re
+
+def _get_csrf(client):
+    r = client.get("/services")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    m = re.search(r'name="csrf-token"\s+content="([^"]+)"', html)
+    assert m, "CSRF meta tag not found"
+    return m.group(1)
 
 
 def _pick_past_non_monday(today):
@@ -84,9 +93,11 @@ def test_public_book_finish_rejects_past_booking(client, app):
     today = datetime.now(SHOP_TIMEZONE).date()
     past_day = _pick_past_non_monday(today)
 
+    csrf = _get_csrf(client)
     r = client.post(
         "/book/finish",
         data={
+            "csrf_token": csrf,
             "service_id": service_id,
             "barber_id": barber_id,
             "date": past_day.isoformat(),
@@ -95,6 +106,7 @@ def test_public_book_finish_rejects_past_booking(client, app):
             "customer_phone": "1234567890",
         },
     )
+
 
     assert r.status_code == 200
     assert b"Cannot book in the past" in r.data
@@ -109,9 +121,12 @@ def test_appointments_new_rejects_past_booking(client, app):
     with client.session_transaction() as sess:
         sess["user_id"] = user_id
 
+    csrf = _get_csrf(client)
+
     r = client.post(
         "/appointments/new",
         data={
+            "csrf_token": csrf,
             "customer_name": "Test Customer",
             "service_id": service_id,
             "date": past_day.isoformat(),

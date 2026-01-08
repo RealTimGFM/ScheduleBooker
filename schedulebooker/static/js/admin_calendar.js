@@ -1,5 +1,13 @@
 // schedulebooker/static/js/admin_calendar.js
 // Handles: Day/Week/Month view switching, date navigation, "now" indicator, booking blocks, and modal.
+function getCSRFToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta && meta.content) return meta.content;
+
+  // fallback: if you ever render a hidden csrf input on the page
+  const input = document.querySelector('input[name="csrf_token"]');
+  return input ? input.value : "";
+}
 
 (function () {
   const qs = (sel, root = document) => root.querySelector(sel);
@@ -463,6 +471,14 @@
         const form = document.createElement("form");
         form.method = "POST";
         form.action = `/admin/book/${currentBookingId}/delete`;
+
+        // ✅ CSRF token
+        const csrf = document.createElement("input");
+        csrf.type = "hidden";
+        csrf.name = "csrf_token";
+        csrf.value = getCSRFToken();
+        form.appendChild(csrf);
+
         document.body.appendChild(form);
         form.submit();
       });

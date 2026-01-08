@@ -177,6 +177,7 @@
     </div>
 
     <form method="post" action="{{ url_for('admin.create_booking') }}" class="modal-form" id="booking-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <input type="hidden" name="booking_id" id="booking-id" value="">
 
       <div class="grid-2">
@@ -233,6 +234,7 @@
 
       <div class="modal-actions">
         <button class="btn" type="submit" id="modal-submit-btn">Create</button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline" type="button" id="modal-delete-btn" style="display:none;">Delete</button>
         <button class="btn btn-outline" type="button" data-modal-close>Cancel</button>
       </div>

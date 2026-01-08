@@ -28,6 +28,7 @@
 
     <div class="services-form-card">
         <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="services-form-grid">
                 <div class="services-field">
                     <label for="name">Name</label>
@@ -102,6 +103,7 @@
             {% if service.is_active %}
             <form class="services-inline-form" method="post"
                 action="{{ url_for('admin.services_hide', service_id=service.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button class="btn btn-outline btn-danger" type="submit"
                     onclick="return confirm('Hide this service? It will disappear from customer lists.')">
                     Hide
@@ -110,6 +112,7 @@
             {% else %}
             <form class="services-inline-form" method="post"
                 action="{{ url_for('admin.services_restore', service_id=service.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button class="btn" type="submit">Restore</button>
             </form>
             {% endif %}

@@ -6,6 +6,17 @@ from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
 from schedulebooker.sqlite_db import execute_db, get_db, query_db
 
+import re
+
+
+def _get_csrf(client):
+    r = client.get("/services")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    m = re.search(r'name="csrf-token"\s+content="([^"]+)"', html)
+    assert m, "CSRF meta tag not found"
+    return m.group(1)
+
 
 @pytest.fixture()
 def app(tmp_path):
@@ -73,10 +84,13 @@ def test_successful_cancellation(client, app):
     """Test successful cancellation more than 30 minutes before start."""
     booking_id = create_future_booking(app, hours_ahead=2)
 
+    csrf = _get_csrf(client)
+
     response = client.post(
         f"/api/booking/{booking_id}/cancel",
         json={"phone": "5141234567"},
         content_type="application/json",
+        headers={"X-CSRFToken": csrf},
     )
 
     assert response.status_code == 200
@@ -85,7 +99,9 @@ def test_successful_cancellation(client, app):
 
     # Verify booking is deleted
     with app.app_context():
-        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+        booking = query_db(
+            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
+        )
         assert booking is None
 
         # Verify cancellation record exists
@@ -102,10 +118,13 @@ def test_cancellation_within_30_minutes(client, app):
     """Test cancellation rejected within 30 minutes of start."""
     booking_id = create_future_booking(app, hours_ahead=0.4)  # 24 minutes ahead
 
+    csrf = _get_csrf(client)
+
     response = client.post(
         f"/api/booking/{booking_id}/cancel",
         json={"phone": "5141234567"},
         content_type="application/json",
+        headers={"X-CSRFToken": csrf},
     )
 
     assert response.status_code == 400
@@ -115,7 +134,9 @@ def test_cancellation_within_30_minutes(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+        booking = query_db(
+            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
+        )
         assert booking is not None
 
         # Verify no cancellation record
@@ -153,10 +174,13 @@ def test_cancellation_past_booking(client, app):
             ),
         )
 
+    csrf = _get_csrf(client)
+
     response = client.post(
         f"/api/booking/{booking_id}/cancel",
         json={"phone": "5141234567"},
         content_type="application/json",
+        headers={"X-CSRFToken": csrf},
     )
 
     assert response.status_code == 400
@@ -166,7 +190,9 @@ def test_cancellation_past_booking(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+        booking = query_db(
+            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
+        )
         assert booking is not None
 
 
@@ -174,10 +200,13 @@ def test_cancellation_phone_mismatch(client, app):
     """Test cancellation rejected if phone doesn't match."""
     booking_id = create_future_booking(app, hours_ahead=2)
 
+    csrf = _get_csrf(client)
+
     response = client.post(
         f"/api/booking/{booking_id}/cancel",
-        json={"phone": "9999999999"},  # Wrong phone
+        json={"phone": "9999999999"},
         content_type="application/json",
+        headers={"X-CSRFToken": csrf},
     )
 
     assert response.status_code == 403
@@ -187,7 +216,9 @@ def test_cancellation_phone_mismatch(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
+        booking = query_db(
+            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
+        )
         assert booking is not None
 
         # Verify no cancellation record

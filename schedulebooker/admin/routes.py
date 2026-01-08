@@ -6,8 +6,8 @@ import sqlite3
 import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
-
-from flask import flash, jsonify, redirect, render_template, request, session, url_for
+from ..extensions import csrf, limiter
+from flask import app, flash, jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
@@ -180,8 +180,9 @@ def _send_reset_email(email: str, token: str, admin_username: str) -> dict:
     }
 
     # DEV MODE: Log to console
-    print("\n" + "=" * 60)
-    print("PASSWORD RESET EMAIL (EmailJS Data)")
+    if app.debug:
+        print("\n" + "=" * 60)
+        print("PASSWORD RESET EMAIL (EmailJS Data)")
     print("=" * 60)
     print(f"To: {email_data['to_email']}")
     print(f"Subject: {email_data['subject']}")
@@ -298,6 +299,7 @@ def login():
 
 
 @admin_bp.post("/login")
+@limiter.limit("5 per 1 minutes")
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
@@ -311,9 +313,16 @@ def login_post():
     session[_ADMIN_EPOCH_KEY] = _ADMIN_EPOCH
     session[_ADMIN_LAST_SEEN_KEY] = int(pytime.time())
 
+    from urllib.parse import urlparse
+
     next_url = (request.form.get("next") or "").strip()
-    if next_url.startswith("/"):
-        return redirect(next_url)
+    if next_url:
+        # Only allow relative paths on same origin
+        parsed = urlparse(next_url)
+        if not parsed.netloc and parsed.path.startswith("/"):
+            return redirect(next_url)
+
+    return redirect(url_for("admin.day"))
 
     return redirect(url_for("admin.day"))
 
@@ -1343,6 +1352,7 @@ def reset_password():
 
 
 @admin_bp.get("/api/day-snapshot")
+@csrf.exempt  # Requires admin session auth instead
 def day_snapshot():
     """API endpoint for polling: returns bookings + cancellations for a date."""
     if not require_admin():

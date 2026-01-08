@@ -165,9 +165,14 @@
       try {
         const response = await fetch(`/api/booking/${currentBookingId}/cancel`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+          },
           body: JSON.stringify({ phone: currentPhone })
         });
+
 
         const data = await response.json();
 

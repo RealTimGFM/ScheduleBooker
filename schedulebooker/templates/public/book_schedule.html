@@ -71,6 +71,7 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
         <h4>Pick a Time</h4>
 
         <form method="post" action="{{ url_for('public.book_confirm') }}" id="time-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <input type="hidden" name="service_id" value="{{ service.id }}">
           <input type="hidden" name="date" id="form-date" value="{{ selected_date or '' }}">
           <input type="hidden" name="barber_id" id="form-barber" value="{{ selected_barber_id or '' }}">

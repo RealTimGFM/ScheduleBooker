@@ -28,6 +28,7 @@
 
     <div class="barbers-form-card">
         <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="barbers-form-grid">
                 <div class="barbers-field">
                     <label for="name">Name</label>
@@ -36,8 +37,8 @@
 
                 <div class="barbers-field">
                     <label for="phone">Phone</label>
-                    <input id="phone" name="phone" type="tel" value="{{ barber.phone or '' }}" 
-                           placeholder="e.g., 5141234567" required>
+                    <input id="phone" name="phone" type="tel" value="{{ barber.phone or '' }}"
+                        placeholder="e.g., 5141234567" required>
                 </div>
 
                 <div class="barbers-field barbers-field-full">
@@ -62,6 +63,7 @@
             {% if barber.is_active %}
             <form class="barbers-inline-form" method="post"
                 action="{{ url_for('admin.barbers_hide', barber_id=barber.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn btn-outline btn-danger" type="submit"
                     onclick="return confirm('Hide this barber? They will be unavailable for new bookings.')">
                     Hide

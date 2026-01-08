@@ -1,3 +1,11 @@
+# Env files
+.env
+.env.*
+!.env.example
+
+# Virtual env folders (your current *.venv won't ignore ".venv/")
+.venv/
+venv/
 *.db
 *.venv
 dump_project.py

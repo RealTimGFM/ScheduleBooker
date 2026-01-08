@@ -2,23 +2,31 @@
 {% block title %}Find booking · ScheduleBooker{% endblock %}
 
 {% block content %}
-  <div class="form-wrapper">
-    <div class="form-card">
-      <h2 class="form-title">Find your booking</h2>
-      <p class="form-desc">Enter the phone number or email you used for the booking.</p>
+<div class="form-wrapper">
+  <div class="form-card">
+    <h2 class="form-title">Find your booking</h2>
+    <p class="form-desc">Enter the phone number or email you used for the booking.</p>
 
-      <form class="booking-form" method="post" action="{{ url_for('public.find_booking_results') }}">
-        <div class="form-group">
-          <label for="contact">Phone or email</label>
-          <input id="contact" name="contact" type="text" value="{{ contact or '' }}" placeholder="Phone or email" required>
-        </div>
+    <form class="booking-form" method="post" action="{{ url_for('public.find_booking_results') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <label for="contact">Phone or email</label>
+        <input id="contact" name="contact" type="text" value="{{ contact or '' }}" placeholder="Phone or email"
+          required>
+      </div>
+      <!-- Add booking_code field after contact field: -->
+      <div class="form-group">
+        <label for="booking_code">Booking Code</label>
+        <input id="booking_code" name="booking_code" type="text" value="{{ booking_code or '' }}"
+          placeholder="Your booking code (from confirmation)" required>
+      </div>
 
-        <button class="primary-btn" type="submit">Search</button>
-      </form>
+      <button class="primary-btn" type="submit">Search</button>
+    </form>
 
-      <p class="auth-note">
-        If you have multiple bookings, they will all appear in the results.
-      </p>
-    </div>
+    <p class="auth-note">
+      If you have multiple bookings, they will all appear in the results.
+    </p>
   </div>
+</div>
 {% endblock %}

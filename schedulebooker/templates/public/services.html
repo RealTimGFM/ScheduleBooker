@@ -63,6 +63,7 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
       </div>
 
       <form method="get" action="/book">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="service_id" value="{{ svc.id }}">
         <button class="btn-book" type="submit">Book</button>
       </form>
@@ -127,6 +128,7 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 <section class="subscribe">
   <h3>Already booked? Find your booking</h3>
   <form class="subscribe-form" method="get" action="{{ url_for('public.find_booking_page') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <label for="go-find" class="small" style="color:#fff;">Use your phone or email to locate bookings.</label>
     <input id="go-find" type="text" name="contact" placeholder="Phone or email (optional)">
     <button type="submit">Find booking</button>

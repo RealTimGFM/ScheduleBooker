@@ -5,4 +5,5 @@ Flask-Login
 python-dotenv
 gunicorn>=21.2
 psycopg2-binary>=2.9
-ruff 
+Flask-WTF==1.2.1
+Flask-Limiter==3.5.0

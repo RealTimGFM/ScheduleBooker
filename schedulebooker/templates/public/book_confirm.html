@@ -36,6 +36,7 @@
 
       {% if service and barber and date and time %}
         <form class="booking-form" method="post" action="{{ url_for('public.book_finish') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <input type="hidden" name="service_id" value="{{ service.id }}">
           <input type="hidden" name="barber_id" value="{{ barber.id }}">
           <input type="hidden" name="date" value="{{ date }}">

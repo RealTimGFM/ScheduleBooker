@@ -71,6 +71,7 @@
 
                                 <form class="services-inline-form" method="post"
                                     action="{{ url_for('admin.services_hide', service_id=s.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button class="btn btn-outline btn-danger" type="submit"
                                         onclick="return confirm('Hide this service? It will disappear from the customer list. Past bookings will show the new name automatically.')">
                                         Hide
@@ -145,6 +146,7 @@
 
                                     <form class="services-inline-form" method="post"
                                         action="{{ url_for('admin.services_restore', service_id=s.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button class="btn" type="submit">Restore</button>
                                     </form>
                                 </div>

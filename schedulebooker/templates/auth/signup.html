@@ -14,6 +14,7 @@
       {% endif %}
 
       <form class="auth-form" method="post" action="{{ url_for('auth.signup') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="next" value="{{ next or '' }}">
 
         <div class="form-group">
