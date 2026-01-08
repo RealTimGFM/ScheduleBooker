@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 
 import pytest
@@ -5,7 +6,7 @@ import pytest
 from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
 from schedulebooker.sqlite_db import get_db
-import re
+
 
 def _get_csrf(client):
     r = client.get("/services")
@@ -106,7 +107,6 @@ def test_public_book_finish_rejects_past_booking(client, app):
             "customer_phone": "1234567890",
         },
     )
-
 
     assert r.status_code == 200
     assert b"Cannot book in the past" in r.data

@@ -7,8 +7,8 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from schedulebooker import create_app
-from schedulebooker.sqlite_db import get_db
 from schedulebooker.admin import routes as admin_routes
+from schedulebooker.sqlite_db import get_db
 
 
 def _extract_csrf(html: str) -> str:
@@ -139,4 +139,4 @@ def test_csrf_token_is_rendered_in_base_html(client):
     page = client.get("/admin/login")
     html = page.get_data(as_text=True)
     # either meta or hidden input must exist
-    assert ("name=\"csrf-token\"" in html) or ("name=\"csrf_token\"" in html)
+    assert ('name="csrf-token"' in html) or ('name="csrf_token"' in html)

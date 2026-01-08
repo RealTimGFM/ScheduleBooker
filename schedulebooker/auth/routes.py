@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import re
-from ..extensions import limiter
+
 from flask import redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from ..extensions import limiter
 from ..sqlite_db import execute_db, query_db
 from . import auth_bp
 
@@ -17,9 +18,7 @@ def normalize_phone(phone: str | None) -> str:
 
 
 def _get_user_by_phone(phone_number: str):
-    return query_db(
-        "SELECT * FROM users WHERE phone_number = ?", (phone_number,), one=True
-    )
+    return query_db("SELECT * FROM users WHERE phone_number = ?", (phone_number,), one=True)
 
 
 @auth_bp.get("/login")
@@ -34,14 +33,10 @@ def login_post():
     pin = (request.form.get("pin") or "").strip()
 
     if not phone:
-        return render_template(
-            "auth/login.html", error="Invalid credentials"
-        )  # Generic
+        return render_template("auth/login.html", error="Invalid credentials")  # Generic
 
     if not _PIN_RE.match(pin):
-        return render_template(
-            "auth/login.html", error="Invalid credentials"
-        )  # Generic
+        return render_template("auth/login.html", error="Invalid credentials")  # Generic
 
     row = _get_user_by_phone(phone)
 

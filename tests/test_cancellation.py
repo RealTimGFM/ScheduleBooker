@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 
 import pytest
@@ -5,8 +6,6 @@ import pytest
 from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
 from schedulebooker.sqlite_db import execute_db, get_db, query_db
-
-import re
 
 
 def _get_csrf(client):
@@ -99,9 +98,7 @@ def test_successful_cancellation(client, app):
 
     # Verify booking is deleted
     with app.app_context():
-        booking = query_db(
-            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-        )
+        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
         assert booking is None
 
         # Verify cancellation record exists
@@ -134,9 +131,7 @@ def test_cancellation_within_30_minutes(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db(
-            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-        )
+        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
         assert booking is not None
 
         # Verify no cancellation record
@@ -190,9 +185,7 @@ def test_cancellation_past_booking(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db(
-            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-        )
+        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
         assert booking is not None
 
 
@@ -216,9 +209,7 @@ def test_cancellation_phone_mismatch(client, app):
 
     # Verify booking still exists
     with app.app_context():
-        booking = query_db(
-            "SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True
-        )
+        booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
         assert booking is not None
 
         # Verify no cancellation record
