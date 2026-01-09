@@ -11,7 +11,7 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 
 {% block content %}
 <div class="page-wrap">
-  <div class="booking-layout-wrapper">
+  <div class="booking-layout-wrapper" data-service-id="{{ service.id }}">
     <div class="booking-top">
       <a class="back-btn" href="{{ url_for('public.services') }}">← Back to services</a>
     </div>
@@ -101,37 +101,7 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
   </div>
 </div>
 
-<script>
-  (function () {
-    const dateEl = document.getElementById("date-select");
-    const barberEl = document.getElementById("barber-select");
-    const serviceInput = document.querySelector("#time-form input[name='service_id']");
-
-    if (!dateEl || !barberEl || !serviceInput) return;
-
-    function refreshSchedule() {
-      const serviceId = serviceInput.value || "";
-      const date = dateEl.value || "";
-      const barberId = barberEl.value || "";
-
-      if (!serviceId) return;
-
-      const url = new URL(window.location.href);
-      url.searchParams.set("service_id", serviceId);
-
-      if (date) url.searchParams.set("date", date);
-      else url.searchParams.delete("date");
-
-      if (barberId) url.searchParams.set("barber_id", barberId);
-      else url.searchParams.delete("barber_id");
-
-      if (url.toString() === window.location.href) return;
-      window.location.href = url.toString();
-    }
-
-    dateEl.addEventListener("change", refreshSchedule);
-    dateEl.addEventListener("input", refreshSchedule);
-    barberEl.addEventListener("change", refreshSchedule);
-  })();
-</script>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='book_schedule.js') }}" defer></script>
 {% endblock %}
