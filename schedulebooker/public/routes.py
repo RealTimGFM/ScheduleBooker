@@ -14,7 +14,7 @@ SHOP_CAPACITY_PER_SLOT = 2  # Public capacity limit
 SHOP_TIMEZONE = ZoneInfo("America/Toronto")  # Montreal timezone
 OPEN = time(11, 0)
 CLOSE = time(19, 0)
-LAST_END_TIME = time(18, 30)  # Last appointment must END by 18:30
+LAST_END_TIME = time(19, 00)  # Last appointment must END by 19:00
 MAX_BOOKINGS_PER_DAY_MESSAGE = "If you want more than 2 bookings in a day, contact the barber."
 
 
@@ -49,6 +49,30 @@ def _floor_to_minute(dt: datetime) -> datetime:
 
 def _overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
     return a_start < b_end and a_end > b_start
+
+
+def _slot_segments_30min(
+    day: date, start_dt: datetime, end_dt: datetime
+) -> list[tuple[datetime, datetime]]:
+    """
+    Return all 30-minute grid segments (within shop hours) that overlap [start_dt, end_dt).
+    This is the core for enforcing "capacity per 30-minute slot", even for 60+ minute services.
+    """
+    segments: list[tuple[datetime, datetime]] = []
+
+    cursor = datetime.combine(day, OPEN)
+    end = datetime.combine(day, LAST_END_TIME)  # last segment ends at 19:00
+
+    while cursor < end:
+        seg_start = cursor
+        seg_end = cursor + timedelta(minutes=30)
+
+        if _overlaps(seg_start, seg_end, start_dt, end_dt):
+            segments.append((seg_start, seg_end))
+
+        cursor += timedelta(minutes=30)
+
+    return segments
 
 
 def _load_services_split():
@@ -95,7 +119,7 @@ def _load_bookings_for_day(day: date):
 
 def _validate_shop_hours_and_past(day: date, start_t: time, end_t: time) -> str | None:
     """
-    Shared validation: shop hours, Monday closed, end_time <= 18:30, no past bookings.
+    Shared validation: shop hours, Monday closed, end_time <= 19:00, no past bookings.
     Returns error message or None.
     """
     # Monday closed
@@ -113,7 +137,7 @@ def _validate_shop_hours_and_past(day: date, start_t: time, end_t: time) -> str 
     if start_t < OPEN or start_t >= CLOSE:
         return f"Start time must be between {OPEN.strftime('%H:%M')} and {CLOSE.strftime('%H:%M')}."
 
-    # End time must be <= 18:30
+    # End time must be <= 19:00
     if end_t > LAST_END_TIME:
         return f"Booking ends at {end_t.strftime('%H:%M')}, but last appointment must end by {LAST_END_TIME.strftime('%H:%M')}."
 
@@ -193,12 +217,6 @@ def _build_time_slots(
             cursor += timedelta(minutes=30)
             continue
 
-        # Count overlaps shop-wide
-        shop_overlaps = 0
-        for p in parsed:
-            if _overlaps(p["start"], p["end"], slot_start, slot_end):
-                shop_overlaps += 1
-
         if effective_shop_cap == 0:
             slots.append(
                 {
@@ -210,7 +228,19 @@ def _build_time_slots(
             cursor += timedelta(minutes=30)
             continue
 
-        if shop_overlaps >= effective_shop_cap:
+        # NEW: capacity is per 30-min segment (a 60-min service consumes 2 segments)
+        segments = _slot_segments_30min(day, slot_start, slot_end)
+        is_full = False
+        for seg_start, seg_end in segments:
+            seg_count = 0
+            for p in parsed:
+                if _overlaps(p["start"], p["end"], seg_start, seg_end):
+                    seg_count += 1
+            if seg_count >= effective_shop_cap:
+                is_full = True
+                break
+
+        if is_full:
             slots.append(
                 {
                     "time": slot_start.strftime("%H:%M"),
@@ -289,10 +319,10 @@ def _validate_public_booking(
 ):
     """
     Public booking validation:
-    - Shop hours, Monday, end_time <= 18:30, no past
+    - Shop hours, Monday, end_time <= 19:00, no past
     - User cannot have overlapping appointments
     - User cannot exceed 2 appointments per day
-    - Shop capacity (max 2 concurrent)
+    - Shop capacity (max 2 concurrent per 30-min slot)
     """
     duration_min = int(service.get("duration_min") or 30)
     start_dt = datetime.combine(day, start_t)
@@ -372,30 +402,38 @@ def _validate_public_booking(
                 "That time is no longer available. Please choose another slot.",
             )
 
-    # Check shop capacity (public bookings only, max 2 concurrent)
-    concurrent_count = 0
-    for bk in existing:
-        if booking_id and bk["id"] == booking_id:
-            continue
+    # NEW: Check shop capacity per 30-minute segment (max 2 concurrent per segment)
+    segments = _slot_segments_30min(day, start_dt, end_dt)
+    for seg_start, seg_end in segments:
+        concurrent_count = 0
+        for bk in existing:
+            if booking_id and bk["id"] == booking_id:
+                continue
 
-        try:
-            bk_start = datetime.fromisoformat(bk["start_time"])
-        except Exception:
-            continue
-
-        if bk.get("end_time"):
             try:
-                bk_end = datetime.fromisoformat(bk["end_time"])
+                bk_start = datetime.fromisoformat(bk["start_time"])
             except Exception:
+                continue
+
+            if bk.get("end_time"):
+                try:
+                    bk_end = datetime.fromisoformat(bk["end_time"])
+                except Exception:
+                    bk_end = bk_start + timedelta(
+                        minutes=svc_duration.get(bk.get("service_id"), 30)
+                    )
+            else:
                 bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
-        else:
-            bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
-        if _overlaps(bk_start, bk_end, start_dt, end_dt):
-            concurrent_count += 1
+            if _overlaps(bk_start, bk_end, seg_start, seg_end):
+                concurrent_count += 1
 
-    if concurrent_count >= SHOP_CAPACITY_PER_SLOT:
-        return None, None, "This time slot is fully booked. Please choose another time."
+        if concurrent_count >= SHOP_CAPACITY_PER_SLOT:
+            return (
+                None,
+                None,
+                "This time slot is fully booked. Please pick another time.",
+            )
 
     return start_dt, end_dt, None
 
