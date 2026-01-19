@@ -50,7 +50,10 @@ def _floor_to_minute(dt: datetime) -> datetime:
 def _overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
     return a_start < b_end and a_end > b_start
 
-def _slot_segments_30min(day: date, start_dt: datetime, end_dt: datetime) -> list[tuple[datetime, datetime]]:
+
+def _slot_segments_30min(
+    day: date, start_dt: datetime, end_dt: datetime
+) -> list[tuple[datetime, datetime]]:
     """
     Return all 30-minute grid segments (within shop hours) that overlap [start_dt, end_dt).
     This is the core for enforcing "capacity per 30-minute slot", even for 60+ minute services.
@@ -416,7 +419,9 @@ def _validate_public_booking(
                 try:
                     bk_end = datetime.fromisoformat(bk["end_time"])
                 except Exception:
-                    bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                    bk_end = bk_start + timedelta(
+                        minutes=svc_duration.get(bk.get("service_id"), 30)
+                    )
             else:
                 bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 

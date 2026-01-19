@@ -112,7 +112,9 @@ def _validate_customer_portal_booking(
                 try:
                     bk_end = datetime.fromisoformat(bk["end_time"])
                 except Exception:
-                    bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                    bk_end = bk_start + timedelta(
+                        minutes=svc_duration.get(bk.get("service_id"), 30)
+                    )
             else:
                 bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
@@ -258,7 +260,16 @@ def new_appointment():
             VALUES
                 (?, ?, ?, ?, ?, ?, 'booked', ?, ?)
             """,
-            (user_id, customer_name, service_id, _iso(start_dt), _iso(end_dt), notes, now_iso, now_iso),
+            (
+                user_id,
+                customer_name,
+                service_id,
+                _iso(start_dt),
+                _iso(end_dt),
+                notes,
+                now_iso,
+                now_iso,
+            ),
         )
 
         flash("Appointment created.", "success")
@@ -379,7 +390,16 @@ def edit_appointment(appt_id):
             SET customer_name = ?, service_id = ?, start_time = ?, end_time = ?, notes = ?, updated_at = ?
             WHERE id = ? AND user_id = ?
             """,
-            (customer_name, service_id, _iso(start_dt), _iso(end_dt), notes, now_iso, appt_id, user_id),
+            (
+                customer_name,
+                service_id,
+                _iso(start_dt),
+                _iso(end_dt),
+                notes,
+                now_iso,
+                appt_id,
+                user_id,
+            ),
         )
         flash("Appointment updated.", "success")
         return redirect(url_for("appointments.list_appointments"))
