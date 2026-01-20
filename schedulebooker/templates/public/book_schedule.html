@@ -41,12 +41,12 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
       <div class="box">
         <h4>Select a Barber</h4>
         <select id="barber-select">
-          <option value="" {% if selected_barber_id is none %}selected{% endif %}>Choose a barber…</option>
+          <option value="" {% if selected_barber_id is none %}selected{% endif %}>Any barber</option>
           {% for b in barbers %}
           <option value="{{ b.id }}" {% if selected_barber_id==b.id %}selected{% endif %}>{{ b.name }}</option>
           {% endfor %}
         </select>
-        <p class="small" style="margin-top:10px;">You must pick a barber before confirming a time.</p>
+        <p class="small" style="margin-top:10px;">Optional: choose a specific barber, or leave “Any barber”.</p>
       </div>
 
       <div class="box">
@@ -57,10 +57,10 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
           <p>
             <strong>Barber:</strong>
             <span id="summary-barber">
-              {% if selected_barber_id %}
+              {% if selected_barber_id is not none %}
               {% for b in barbers %}{% if b.id == selected_barber_id %}{{ b.name }}{% endif %}{% endfor %}
               {% else %}
-              —
+              Any barber
               {% endif %}
             </span>
           </p>
@@ -77,9 +77,9 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 
           <div class="time-grid">
             {% for slot in time_slots %}
-            {% set disabled = (not slot.is_available) or (selected_barber_id is none) %}
+            {% set disabled = (not slot.is_available) %}
             <button type="submit" name="time" value="{{ slot.time }}" {% if disabled %}disabled{% endif %}
-              title="{% if selected_barber_id is none %}Select a barber first{% elif slot.reason %}{{ slot.reason }}{% else %}Available{% endif %}">
+              title="{% if slot.reason %}{{ slot.reason }}{% else %}Available{% endif %}">
               {{ slot.time }}
               {% if slot.reason %}
               <span class="small">({{ slot.reason }})</span>

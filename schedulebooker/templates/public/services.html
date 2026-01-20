@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Services · Sonthien Coiffure{% endblock %}
 
-{% macro price_text(s) -%}
-{%- if s.price_label -%}
-{{ s.price_label }}
-{%- else -%}
-${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
-{%- endif -%}
-{%- endmacro %}
-
 {% block content %}
 <section class="container" id="top">
   <h1 class="title">Book an appointment at Sonthien Coiffure</h1>
@@ -16,7 +8,6 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
     Sonthien Coiffure is a unisex hair salon in Montréal (29B Avenue Shamrock).
     Book online in a few clicks, or call us if you prefer.
   </p>
-
 </section>
 
 <section class="card-grid section" id="services">
@@ -24,13 +15,12 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 
   <div class="team-grid">
     {% for svc in most_popular_services %}
-    <div class="card">
-      <div class="card-top">
-        <div class="avatar">POPULAR</div>
-        <div>
-          <h4>{{ svc.name }}</h4>
-          <p class="small">{{ svc.category }} · {{ svc.duration_min }} min</p>
-          <p><strong>{{ price_text(svc) }}</strong></p>
+    <div class="card service-card">
+      <div class="service-info">
+        <h4 class="service-name">{{ svc.name }}</h4>
+        <div class="service-meta-row">
+          <span class="pill">{{ svc.category }}</span>
+          <span class="service-duration">{{ svc.duration_min }} min</span>
         </div>
       </div>
 
@@ -52,13 +42,12 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 
   <div class="team-grid">
     {% for svc in other_services %}
-    <div class="card">
-      <div class="card-top">
-        <div class="avatar">SERVICE</div>
-        <div>
-          <h4>{{ svc.name }}</h4>
-          <p class="small">{{ svc.category }} · {{ svc.duration_min }} min</p>
-          <p><strong>{{ price_text(svc) }}</strong></p>
+    <div class="card service-card">
+      <div class="service-info">
+        <h4 class="service-name">{{ svc.name }}</h4>
+        <div class="service-meta-row">
+          <span class="pill">{{ svc.category }}</span>
+          <span class="service-duration">{{ svc.duration_min }} min</span>
         </div>
       </div>
 
@@ -78,48 +67,40 @@ ${{ "%.2f"|format(s.price or 0) }}{%- if s.price_is_from %}+{%- endif -%}
 <section class="container" id="about">
   <h2 class="title">About Us</h2>
   <p class="intro-text">
-    Sonthien Barber is a neighborhood barbershop built on clean cuts, consistent quality, and respectful service. We
-    take pride in precision—sharp fades, clean lineups, and well-finished styles—so you leave confident every time.
-    Whether you want a fresh new look or your regular cut, our goal is simple: make you look your best. </p>
+    Sonthien Barber is a neighborhood barbershop built on clean cuts, consistent quality, and respectful service.
+    We take pride in precision—sharp fades, clean lineups, and well-finished styles—so you leave confident every time.
+    Whether you want a fresh new look or your regular cut, our goal is simple: make you look your best.
+  </p>
 </section>
 
 <section class="card-grid section" id="contact">
   <h2 class="section-title">Contact</h2>
 
-  <div class="team-grid">
-    <div class="card">
-      <div class="card-top">
-        <div class="avatar">PHONE</div>
-        <div>
-          <h4>Phone</h4>
-          <p class="small"><a href="tel:+15142773585">(514) 277-3585</a></p>
-        </div>
-      </div>
+  <div class="contact-grid">
+    <div class="card contact-card">
+      <h4>Phone</h4>
+      <p class="contact-value">
+        <a href="tel:+15142773585">(514) 277-3585</a>
+      </p>
+      <p class="small">Call us if you prefer booking by phone.</p>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <div class="avatar">ADDRESS</div>
-        <div>
-          <h4>Address</h4>
-          <p class="small">
-            <a href="https://maps.google.com/?q=29B+Av+Shamrock,+Montr%C3%A9al,+QC+H2S+1A3">
-              29B Av. Shamrock, Montréal, QC H2S 1A3
-            </a>
-          </p>
-        </div>
-      </div>
+    <div class="card contact-card">
+      <h4>Address</h4>
+      <p class="contact-value">
+        <a target="_blank" rel="noopener"
+           href="https://maps.google.com/?q=29B+Av+Shamrock,+Montr%C3%A9al,+QC+H2S+1A3">
+          29B Av. Shamrock, Montréal
+        </a>
+      </p>
+      <p class="small">QC H2S 1A3</p>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <div class="avatar">HOURS</div>
-        <div>
-          <h4>Hours</h4>
-          <p class="small">Tue–Sun 11:00–19:00</p>
-          <p class="small">Mon: Closed</p>
-        </div>
-      </div>
+    <div class="card contact-card">
+      <h4>Hours</h4>
+      <p class="contact-value">Tue–Sun</p>
+      <p class="small">11:00–19:00</p>
+      <p class="small">Mon: Closed</p>
     </div>
   </div>
 </section>

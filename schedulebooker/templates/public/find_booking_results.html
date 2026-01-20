@@ -36,7 +36,7 @@
         <tr id="booking-row-{{ b.id }}" data-booking-id="{{ b.id }}" data-start="{{ b.start_time }}">
           <td>{{ (b.start_time or "")|replace("T", " ") }}</td>
           <td>{{ b.service_name or "—" }}</td>
-          <td>{{ b.barber_name or "—" }}</td>
+          <td>{{ b.barber_name or "Any barber" }}</td>
           <td>
             {% if b.status == "booked" %}
             <span class="pill ok">booked</span>
