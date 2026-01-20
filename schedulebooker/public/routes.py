@@ -366,9 +366,7 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(
-                    minutes=svc_duration.get(bk.get("service_id"), 30)
-                )
+                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
             if _overlaps(bk_start, bk_end, start_dt, end_dt):
                 return (
@@ -399,9 +397,7 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(
-                    minutes=svc_duration.get(bk.get("service_id"), 30)
-                )
+                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
             if _overlaps(bk_start, bk_end, start_dt, end_dt):
                 return (
@@ -431,9 +427,7 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(
-                    minutes=svc_duration.get(bk.get("service_id"), 30)
-                )
+                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
 
             if _overlaps(bk_start, bk_end, seg_start, seg_end):
                 concurrent_count += 1
