@@ -29,15 +29,15 @@
             </p>
             <p><strong>Date:</strong> {{ date or "—" }}</p>
             <p><strong>Time:</strong> {{ time or "—" }}</p>
-            <p><strong>Barber:</strong> {{ barber.name if barber else "—" }}</p>
+            <p><strong>Barber:</strong> {{ barber.name if barber else "Any barber" }}</p>
           </div>
         </div>
       </div>
 
-      {% if service and barber and date and time %}
+      {% if service and date and time %}
         <form class="booking-form" method="post" action="{{ url_for('public.book_finish') }}">
           <input type="hidden" name="service_id" value="{{ service.id }}">
-          <input type="hidden" name="barber_id" value="{{ barber.id }}">
+          <input type="hidden" name="barber_id" value="{{ barber.id if barber else '' }}">
           <input type="hidden" name="date" value="{{ date }}">
           <input type="hidden" name="time" value="{{ time }}">
 
@@ -71,7 +71,7 @@
         </form>
       {% else %}
         <p class="small">
-          Missing booking selection. Go back and select service, barber, date, and time.
+          Missing booking selection. Go back and select service, date, and time.
         </p>
         <div style="margin-top: 16px;">
           <a class="nav-link" href="{{ url_for('public.services') }}">Back to services</a>

@@ -771,3 +771,81 @@ textarea {
     animation: none !important;
   }
 }
+
+/* =========================================================
+   PUBLIC SERVICES: simplified cards (no avatar/label box)
+   ========================================================= */
+.service-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.service-card .service-info {
+  flex: 1;
+}
+
+.service-card .service-name {
+  margin: 0;
+}
+
+.service-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.service-duration {
+  color: var(--text-soft);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.service-card form {
+  margin-top: auto;
+}
+
+/* =========================================================
+   CONTACT SECTION: clean 3-card layout
+   ========================================================= */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-card h4 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.contact-card .contact-value {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.contact-card .contact-value a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+  padding-bottom: 2px;
+}
+
+.contact-card .contact-value a:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.55);
+}

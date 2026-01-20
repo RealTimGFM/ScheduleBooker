@@ -15,7 +15,7 @@
           <div>
             <h4 style="font-size: 20px;">{{ booking.booking_code }}</h4>
             <p class="small">
-              {{ booking.service_name }} · {{ booking.barber_name }}
+              {{ booking.service_name }} · {{ booking.barber_name or "Any barber" }}
             </p>
             <p><strong>Start:</strong> {{ (booking.start_time or "")|replace("T", " ") }}</p>
             <p><strong>Status:</strong>

@@ -311,7 +311,7 @@ def _parse_time_hhmm(time_str: str | None) -> time | None:
 
 def _validate_public_booking(
     service: dict,
-    barber: dict,
+    barber: dict | None,
     day: date,
     start_t: time,
     user_id: int | None,
@@ -322,6 +322,7 @@ def _validate_public_booking(
     - Shop hours, Monday, end_time <= 19:00, no past
     - User cannot have overlapping appointments
     - User cannot exceed 2 appointments per day
+    - If a specific barber is selected: no overlap for that barber
     - Shop capacity (max 2 concurrent per 30-min slot)
     """
     duration_min = int(service.get("duration_min") or 30)
@@ -365,7 +366,9 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
 
             if _overlaps(bk_start, bk_end, start_dt, end_dt):
                 return (
@@ -374,33 +377,38 @@ def _validate_public_booking(
                     "You already have an appointment at this time. Cannot double-book.",
                 )
 
-    # Check barber overlap
-    for bk in existing:
-        if booking_id and bk["id"] == booking_id:
-            continue
+    # If a specific barber is selected, enforce no-overlap for that barber
+    if barber is not None:
+        for bk in existing:
+            if booking_id and bk["id"] == booking_id:
+                continue
 
-        if bk.get("barber_id") != barber["id"]:
-            continue
+            if bk.get("barber_id") != barber["id"]:
+                continue
 
-        try:
-            bk_start = datetime.fromisoformat(bk["start_time"])
-        except Exception:
-            continue
-
-        if bk.get("end_time"):
             try:
-                bk_end = datetime.fromisoformat(bk["end_time"])
+                bk_start = datetime.fromisoformat(bk["start_time"])
             except Exception:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
-        else:
-            bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                continue
 
-        if _overlaps(bk_start, bk_end, start_dt, end_dt):
-            return (
-                None,
-                None,
-                "That time is no longer available. Please choose another slot.",
-            )
+            if bk.get("end_time"):
+                try:
+                    bk_end = datetime.fromisoformat(bk["end_time"])
+                except Exception:
+                    bk_end = bk_start + timedelta(
+                        minutes=svc_duration.get(bk.get("service_id"), 30)
+                    )
+            else:
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
+
+            if _overlaps(bk_start, bk_end, start_dt, end_dt):
+                return (
+                    None,
+                    None,
+                    "That time is no longer available. Please choose another slot.",
+                )
 
     # NEW: Check shop capacity per 30-minute segment (max 2 concurrent per segment)
     segments = _slot_segments_30min(day, start_dt, end_dt)
@@ -423,7 +431,9 @@ def _validate_public_booking(
                         minutes=svc_duration.get(bk.get("service_id"), 30)
                     )
             else:
-                bk_end = bk_start + timedelta(minutes=svc_duration.get(bk.get("service_id"), 30))
+                bk_end = bk_start + timedelta(
+                    minutes=svc_duration.get(bk.get("service_id"), 30)
+                )
 
             if _overlaps(bk_start, bk_end, seg_start, seg_end):
                 concurrent_count += 1
@@ -599,11 +609,11 @@ def book_schedule():
 @public_bp.post("/book/confirm")
 def book_confirm():
     service_id = request.form.get("service_id", type=int)
-    barber_id = request.form.get("barber_id", type=int)
+    barber_id = request.form.get("barber_id", type=int)  # may be None for "Any barber"
     date_str = request.form.get("date", type=str)
     time_str = request.form.get("time", type=str)
 
-    if not service_id or not barber_id or not date_str or not time_str:
+    if not service_id or not date_str or not time_str:
         return render_or_json(
             "public/book_confirm.html",
             service=None,
@@ -611,21 +621,31 @@ def book_confirm():
             date=date_str,
             time=time_str,
             duration_min=None,
-            error="Missing required booking selection (service/barber/date/time).",
+            error="Missing required booking selection (service/date/time).",
         )
 
     service = _load_service(service_id)
-    barber = _load_barber(barber_id)
+    if not service:
+        return render_or_json(
+            "public/book_confirm.html",
+            service=None,
+            barber=None,
+            date=date_str,
+            time=time_str,
+            duration_min=None,
+            error="Invalid service selection.",
+        )
 
-    if not service or not barber:
+    barber = _load_barber(barber_id) if barber_id else None
+    if barber_id and not barber:
         return render_or_json(
             "public/book_confirm.html",
             service=service,
-            barber=barber,
+            barber=None,
             date=date_str,
             time=time_str,
-            duration_min=int(service.get("duration_min") or 30) if service else None,
-            error="Invalid service or barber selection.",
+            duration_min=int(service.get("duration_min") or 30),
+            error="Invalid barber selection.",
         )
 
     return render_or_json(
@@ -642,7 +662,7 @@ def book_confirm():
 @public_bp.post("/book/finish")
 def book_finish():
     service_id = request.form.get("service_id", type=int)
-    barber_id = request.form.get("barber_id", type=int)
+    barber_id = request.form.get("barber_id", type=int)  # may be None for "Any barber"
     date_str = request.form.get("date", type=str)
     time_str = request.form.get("time", type=str)
 
@@ -655,7 +675,7 @@ def book_finish():
     barber = _load_barber(barber_id) if barber_id else None
     duration_min = int(service.get("duration_min") or 30) if service else None
 
-    if not service or not barber or not date_str or not time_str:
+    if not service or not date_str or not time_str:
         return render_or_json(
             "public/book_confirm.html",
             service=service,
@@ -664,6 +684,17 @@ def book_finish():
             time=time_str,
             duration_min=duration_min,
             error="Missing or invalid booking selection.",
+        )
+
+    if barber_id and not barber:
+        return render_or_json(
+            "public/book_confirm.html",
+            service=service,
+            barber=None,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
+            error="Invalid barber selection.",
         )
 
     if not customer_name:
@@ -726,7 +757,7 @@ def book_finish():
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             user_id,
-            barber["id"],
+            (barber["id"] if barber else None),
             service["id"],
             customer_name,
             customer_phone or None,
