@@ -12,10 +12,4 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: schedulebooker-db
-          property: connectionString
-
-databases:
-  - name: schedulebooker-db
-    plan: free
+        sync: false
