@@ -113,9 +113,7 @@ def get_db():
     # ----------------------------
     database = current_app.config.get("DATABASE", "appointments.db")
     db_path = (
-        database
-        if os.path.isabs(database)
-        else os.path.join(current_app.instance_path, database)
+        database if os.path.isabs(database) else os.path.join(current_app.instance_path, database)
     )
 
     os.makedirs(os.path.dirname(db_path), exist_ok=True)

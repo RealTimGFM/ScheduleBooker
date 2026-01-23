@@ -11,6 +11,7 @@ app = create_app()
 
 def _is_postgres() -> bool:
     import os
+
     from flask import current_app
 
     url = os.environ.get("DATABASE_URL") or current_app.config.get("DATABASE_URL")
