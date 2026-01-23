@@ -1,23 +1,50 @@
 # create_db.py
+from __future__ import annotations
+
 from werkzeug.security import generate_password_hash
 
 from schedulebooker import create_app
-from schedulebooker.sqlite_db import execute_db, get_db
+from schedulebooker.sqlite_db import execute_db, get_db, query_db
 
 app = create_app()
 
-with app.app_context():
+
+def _is_postgres() -> bool:
+    import os
+    from flask import current_app
+
+    url = os.environ.get("DATABASE_URL") or current_app.config.get("DATABASE_URL")
+    return bool(url) and (url.startswith("postgres://") or url.startswith("postgresql://"))
+
+
+def _run_schema() -> None:
     db = get_db()
 
-    # Run schema
+    if _is_postgres():
+        # Postgres schema
+        with app.open_resource("schema_postgres.sql") as f:
+            sql = f.read().decode("utf-8")
+
+        # Execute statements one-by-one
+        for stmt in sql.split(";"):
+            s = stmt.strip()
+            if not s:
+                continue
+            execute_db(s)
+        return
+
+    # SQLite schema
     with app.open_resource("schema.sql") as f:
         db.executescript(f.read().decode("utf-8"))
     db.commit()
 
+
+with app.app_context():
+    _run_schema()
+
     # Seed services
-    rows = db.execute("SELECT COUNT(*) AS c FROM services").fetchone()
-    if rows["c"] == 0:
-        # in create_db.py seed section
+    row = query_db("SELECT COUNT(*) AS c FROM services", one=True)
+    if row and row["c"] == 0:
         services = [
             # name, category, duration_min, price, price_is_from, price_label, is_popular, sort_order
             ("Coupe (Homme)", "Homme", 30, 15.0, 0, None, 1, 1),
@@ -42,8 +69,8 @@ with app.app_context():
             )
 
     # Seed barbers
-    rows = db.execute("SELECT COUNT(*) AS c FROM barbers").fetchone()
-    if rows["c"] == 0:
+    row = query_db("SELECT COUNT(*) AS c FROM barbers", one=True)
+    if row and row["c"] == 0:
         barbers = [
             ("Mr Thien", "(514) 277-3585"),
             ("Barber B", "5142222222"),
@@ -51,14 +78,16 @@ with app.app_context():
         ]
         for name, phone in barbers:
             execute_db(
-                "INSERT INTO barbers (name, phone, is_active) VALUES (?, ?, 1)", (name, phone)
+                "INSERT INTO barbers (name, phone, is_active) VALUES (?, ?, 1)",
+                (name, phone),
             )
+
     # Seed default admin account (hashed password)
-    rows = db.execute("SELECT COUNT(*) AS c FROM admin_users").fetchone()
-    if rows["c"] == 0:
+    row = query_db("SELECT COUNT(*) AS c FROM admin_users", one=True)
+    if row and row["c"] == 0:
         execute_db(
             "INSERT INTO admin_users (username, password_hash) VALUES (?, ?)",
             ("T", generate_password_hash("1")),
         )
 
-    print("Database initialized and seeds added (services, barbers, admin).")
+    print("Database initialized and seeds added.")
