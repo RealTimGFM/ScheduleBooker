@@ -473,6 +473,7 @@ def _count_bookings_for_contact(day: date, phone: str | None, email: str | None)
     )
     return int(row["cnt"]) if row else 0
 
+
 def _load_booking_for_cancellation(booking_id: int, booked_only: bool = True):
     sql = """
         SELECT a.*, s.name AS service_name, b.name AS barber_name
@@ -547,6 +548,7 @@ def _store_cancellation_and_mark_cancelled(booking, cancelled_by: str):
         "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
         (cancelled_at, booking["id"]),
     )
+
 
 def _generate_booking_code() -> str:
     for _ in range(5):
@@ -854,6 +856,7 @@ def book_finish():
     )
     flash("Booking confirmed.", "success")
     return redirect(f"/book/success?booking_id={booking_id}")
+
 
 @public_bp.get("/book/success")
 def book_success():

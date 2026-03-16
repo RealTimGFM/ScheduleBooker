@@ -7,7 +7,7 @@ import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import flash, jsonify, redirect, render_template, request, session, url_for
+from flask import jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
@@ -316,6 +316,7 @@ def _register_failed_reset_attempt(token_input: str) -> bool:
     )
     return False
 
+
 def _validate_shop_hours(day: date, start_t: time, end_t: time) -> str | None:
     """Validate booking is within shop hours. Returns error message or None."""
     # Monday closed
@@ -615,6 +616,7 @@ def edit_booking(booking_id: int):
     )
 
     return redirect(url_for("admin.day", date=d.isoformat()))
+
 
 @admin_bp.post("/book/<int:booking_id>/delete")
 def delete_booking(booking_id: int):
@@ -1403,6 +1405,7 @@ def reset_password():
     )
 
     return redirect(url_for("admin.login") + "?reset=success")
+
 
 @admin_bp.get("/api/day-snapshot")
 def day_snapshot():

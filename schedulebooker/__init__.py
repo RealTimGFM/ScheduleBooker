@@ -14,11 +14,7 @@ def create_app():
     app.config.from_pyfile("config.py", silent=True)
 
     # Environment should win in production. Fallback to config.py, then "dev".
-    app.config["SECRET_KEY"] = (
-        os.environ.get("SECRET_KEY")
-        or app.config.get("SECRET_KEY")
-        or "dev"
-    )
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or app.config.get("SECRET_KEY") or "dev"
 
     sqlite_db.init_app(app)
 

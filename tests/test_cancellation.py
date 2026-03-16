@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+
 import pytest
+
 from schedulebooker import create_app
 from schedulebooker.public.routes import SHOP_TIMEZONE
 from schedulebooker.sqlite_db import execute_db, get_db, query_db
