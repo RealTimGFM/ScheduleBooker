@@ -135,13 +135,6 @@
   margin-top: 6px;
 }
 
-* FOOTER */ .footer {
-  background: var(--black-main);
-  color: #fff;
-  padding: 50px 24px;
-}
-
-
 /* HR */
 
 
@@ -484,18 +477,9 @@ main {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 40px;
-
-  max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 40px;
 }
 
 .footer h4 {
-  color: var(--gold-warm);
-  margin-bottom: 12px;
-
   color: var(--gold-warm);
   margin-bottom: 12px;
 }
@@ -503,11 +487,7 @@ main {
 .footer-copy {
   font-size: 14px;
   color: #aaa;
-
-  font-size: 14px;
-  color: #aaa;
 }
-
 
 /* HR */
 hr {

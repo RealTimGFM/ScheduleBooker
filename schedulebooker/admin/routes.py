@@ -246,12 +246,75 @@ def _update_rate_limit(admin_id: int, channel: str):
     """Update the last sent timestamp for rate limiting."""
     now = _iso(datetime.now())
 
-    execute_db(
-        "INSERT OR REPLACE INTO admin_reset_rate_limits "
-        "(admin_user_id, channel, last_sent_at) VALUES (?, ?, ?)",
-        (admin_id, channel, now),
+    existing = query_db(
+        "SELECT id FROM admin_reset_rate_limits WHERE admin_user_id = ? AND channel = ?",
+        (admin_id, channel),
+        one=True,
     )
 
+    if existing:
+        execute_db(
+            "UPDATE admin_reset_rate_limits SET last_sent_at = ? WHERE id = ?",
+            (now, existing["id"]),
+        )
+    else:
+        execute_db(
+            "INSERT INTO admin_reset_rate_limits (admin_user_id, channel, last_sent_at) VALUES (?, ?, ?)",
+            (admin_id, channel, now),
+        )
+
+
+def _guess_reset_channel(token_input: str) -> str | None:
+    token_input = (token_input or "").strip()
+
+    if not token_input:
+        return None
+
+    if token_input.isdigit() and len(token_input) == 6:
+        return "sms"
+
+    return "email"
+
+
+def _get_latest_active_reset_for_channel(channel: str):
+    return query_db(
+        """
+        SELECT *
+        FROM admin_password_resets
+        WHERE channel = ? AND used_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (channel,),
+        one=True,
+    )
+
+
+def _register_failed_reset_attempt(token_input: str) -> bool:
+    """
+    Increment attempts on the latest active reset for the guessed channel.
+    Returns True if the reset is already locked by max attempts.
+    """
+    channel = _guess_reset_channel(token_input)
+    if not channel:
+        return False
+
+    reset = _get_latest_active_reset_for_channel(channel)
+    if not reset:
+        return False
+
+    expires_at = datetime.fromisoformat(reset["expires_at"])
+    if datetime.now() > expires_at:
+        return False
+
+    if reset["attempts"] >= MAX_RESET_ATTEMPTS:
+        return True
+
+    execute_db(
+        "UPDATE admin_password_resets SET attempts = attempts + 1 WHERE id = ?",
+        (reset["id"],),
+    )
+    return False
 
 def _validate_shop_hours(day: date, start_t: time, end_t: time) -> str | None:
     """Validate booking is within shop hours. Returns error message or None."""
@@ -467,12 +530,6 @@ def create_booking():
     duration_min = int(service["duration_min"]) if service else 30
     end_dt = start_dt + timedelta(minutes=duration_min)
 
-    # VALIDATION: Check shop hours
-    hours_error = _validate_shop_hours(d, t, end_dt.time())
-    if hours_error:
-        flash(hours_error, "error")
-        return redirect(url_for("admin.day", date=d.isoformat()))
-
     booking_code = secrets.token_urlsafe(6)
     now = _iso(datetime.now())
     execute_db(
@@ -505,9 +562,6 @@ def create_booking():
     return redirect(url_for("admin.day", date=d.isoformat()))
 
 
-# Add these routes to schedulebooker/admin/routes.py (after create_booking)
-
-
 @admin_bp.post("/book/<int:booking_id>/edit")
 def edit_booking(booking_id: int):
     if not require_admin():
@@ -537,12 +591,6 @@ def edit_booking(booking_id: int):
     duration_min = int(service["duration_min"]) if service else 30
     end_dt = start_dt + timedelta(minutes=duration_min)
 
-    # VALIDATION: Check shop hours
-    hours_error = _validate_shop_hours(d, t, end_dt.time())
-    if hours_error:
-        flash(hours_error, "error")
-        return redirect(url_for("admin.day", date=d.isoformat()))
-
     execute_db(
         """
         UPDATE appointments 
@@ -567,7 +615,6 @@ def edit_booking(booking_id: int):
     )
 
     return redirect(url_for("admin.day", date=d.isoformat()))
-
 
 @admin_bp.post("/book/<int:booking_id>/delete")
 def delete_booking(booking_id: int):
@@ -1210,25 +1257,32 @@ def forgot_password():
         token = _generate_reset_code()
         token_hash = _hash_token(token)
 
-    # Store reset token
+    now_iso = _iso(datetime.now())
     expires_at = _iso(datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES))
+
+    # Invalidate any previous unused reset for the same admin + channel
+    execute_db(
+        """
+        UPDATE admin_password_resets
+        SET used_at = ?
+        WHERE admin_user_id = ? AND channel = ? AND used_at IS NULL
+        """,
+        (now_iso, admin_id, channel),
+    )
+
+    # Store new reset token
     execute_db(
         "INSERT INTO admin_password_resets "
         "(admin_user_id, token_hash, channel, expires_at, created_at) "
         "VALUES (?, ?, ?, ?, ?)",
-        (admin_id, token_hash, channel, expires_at, _iso(datetime.now())),
+        (admin_id, token_hash, channel, expires_at, now_iso),
     )
 
     # Prepare email/sms data (logged to console in dev)
     if channel == "email":
         _send_reset_email(admin["email"], token, admin_username)
-        # email_data = _send_reset_email(admin["email"], token, admin_username)
-        # In production with EmailJS, you'd return this data to frontend
-        # For now, it's logged to console
     else:
         _send_reset_sms(admin["phone"], token, admin_username)
-        # sms_data = _send_reset_sms(admin["phone"], token, admin_username)
-        # SMS code is logged to console
 
     # Update rate limit
     _update_rate_limit(admin_id, channel)
@@ -1294,6 +1348,15 @@ def reset_password():
     )
 
     if not reset:
+        locked = _register_failed_reset_attempt(token_input)
+        if locked:
+            return render_or_json(
+                "admin/reset_password.html",
+                token=token_input,
+                error="Too many attempts. Please request a new reset code/token.",
+                success=None,
+            )
+
         return render_or_json(
             "admin/reset_password.html",
             token=token_input,
@@ -1340,7 +1403,6 @@ def reset_password():
     )
 
     return redirect(url_for("admin.login") + "?reset=success")
-
 
 @admin_bp.get("/api/day-snapshot")
 def day_snapshot():
