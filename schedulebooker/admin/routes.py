@@ -7,7 +7,7 @@ import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import jsonify, redirect, render_template, request, session, url_for
+from flask import current_app, jsonify, redirect, render_template, request, session, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
@@ -157,31 +157,27 @@ def _generate_reset_token() -> str:
 def _send_reset_email(email: str, token: str, admin_username: str) -> dict:
     """
     Prepare email data for EmailJS.
-    Returns a dict with email parameters that the frontend will send via EmailJS.
-
-    In production: Frontend calls EmailJS API with this data.
-    In dev: We log it to console.
+    Frontend will actually send the email using EmailJS.
     """
-
-    # Build reset URL (use request context if available, otherwise use config)
     try:
         reset_url = url_for("admin.reset_password", token=token, _external=True)
     except RuntimeError:
-        # Fallback if outside request context
-        reset_url = f"/admin/reset?token={token}"
+        base_url = (current_app.config.get("APP_BASE_URL") or "").rstrip("/")
+        if base_url:
+            reset_url = f"{base_url}/admin/reset?token={token}"
+        else:
+            reset_url = f"/admin/reset?token={token}"
 
     email_data = {
         "to_email": email,
         "to_name": admin_username,
         "subject": "Password Reset Request - ScheduleBooker Admin",
-        "message": f"Click the link below to reset your password:\n\n{reset_url}\n\nThis link expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this, please ignore this email.",
         "reset_url": reset_url,
         "expires_minutes": RESET_TOKEN_EXPIRY_MINUTES,
     }
 
-    # DEV MODE: Log to console
     print("\n" + "=" * 60)
-    print("PASSWORD RESET EMAIL (EmailJS Data)")
+    print("PASSWORD RESET EMAIL (EmailJS Payload)")
     print("=" * 60)
     print(f"To: {email_data['to_email']}")
     print(f"Subject: {email_data['subject']}")
@@ -262,6 +258,21 @@ def _update_rate_limit(admin_id: int, channel: str):
             "INSERT INTO admin_reset_rate_limits (admin_user_id, channel, last_sent_at) VALUES (?, ?, ?)",
             (admin_id, channel, now),
         )
+
+
+def _emailjs_config_dict() -> dict:
+    return {
+        "emailjs_public_key": (current_app.config.get("EMAILJS_PUBLIC_KEY") or "").strip(),
+        "emailjs_service_id": (current_app.config.get("EMAILJS_SERVICE_ID") or "").strip(),
+        "emailjs_template_id": (current_app.config.get("EMAILJS_TEMPLATE_ID") or "").strip(),
+    }
+
+
+def _emailjs_is_configured() -> bool:
+    cfg = _emailjs_config_dict()
+    return bool(
+        cfg["emailjs_public_key"] and cfg["emailjs_service_id"] and cfg["emailjs_template_id"]
+    )
 
 
 def _guess_reset_channel(token_input: str) -> str | None:
@@ -1210,9 +1221,14 @@ def change_password():
 def forgot_password():
     """Forgot password entry point - choose email or SMS."""
     if request.method == "GET":
-        return render_or_json("admin/forgot_password.html", error=None, success=None)
+        return render_or_json(
+            "admin/forgot_password.html",
+            error=None,
+            success=None,
+            emailjs_payload=None,
+            **_emailjs_config_dict(),
+        )
 
-    # POST: send reset code/link
     identifier = (request.form.get("identifier") or "").strip().lower()
     channel = request.form.get("channel")  # 'email' or 'sms'
 
@@ -1221,48 +1237,65 @@ def forgot_password():
             "admin/forgot_password.html",
             error="Please provide your email or phone and select a reset method.",
             success=None,
+            emailjs_payload=None,
+            **_emailjs_config_dict(),
         )
 
-    # Find admin by email or phone
     if channel == "email":
         admin = query_db(
-            "SELECT * FROM admin_users WHERE LOWER(email) = ?", (identifier,), one=True
+            "SELECT * FROM admin_users WHERE LOWER(email) = ?",
+            (identifier,),
+            one=True,
         )
-    else:  # sms
-        admin = query_db("SELECT * FROM admin_users WHERE phone = ?", (identifier,), one=True)
+    else:
+        admin = query_db(
+            "SELECT * FROM admin_users WHERE phone = ?",
+            (identifier,),
+            one=True,
+        )
 
-    # Always show success to prevent user enumeration
+    # Prevent user enumeration
     if not admin:
         return render_or_json(
             "admin/forgot_password.html",
             error=None,
             success=f"If an account exists, a reset {channel} has been sent.",
+            emailjs_payload=None,
+            **_emailjs_config_dict(),
         )
 
     admin_id = admin["id"]
     admin_username = admin["username"]
 
-    # Check rate limit
     can_send, wait_seconds = _check_rate_limit(admin_id, channel)
     if not can_send:
         return render_or_json(
             "admin/forgot_password.html",
             error=f"Please wait {wait_seconds} seconds before requesting another reset.",
             success=None,
+            emailjs_payload=None,
+            **_emailjs_config_dict(),
         )
 
-    # Generate token/code
+    if channel == "email" and not _emailjs_is_configured():
+        return render_or_json(
+            "admin/forgot_password.html",
+            error="EmailJS is not configured yet. Add EMAILJS_PUBLIC_KEY, EMAILJS_SERVICE_ID, and EMAILJS_TEMPLATE_ID to your .env file.",
+            success=None,
+            emailjs_payload=None,
+            **_emailjs_config_dict(),
+        )
+
     if channel == "email":
         token = _generate_reset_token()
         token_hash = _hash_token(token)
-    else:  # sms
+    else:
         token = _generate_reset_code()
         token_hash = _hash_token(token)
 
     now_iso = _iso(datetime.now())
     expires_at = _iso(datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES))
 
-    # Invalidate any previous unused reset for the same admin + channel
     execute_db(
         """
         UPDATE admin_password_resets
@@ -1272,30 +1305,33 @@ def forgot_password():
         (now_iso, admin_id, channel),
     )
 
-    # Store new reset token
     execute_db(
-        "INSERT INTO admin_password_resets "
-        "(admin_user_id, token_hash, channel, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?)",
+        """
+        INSERT INTO admin_password_resets
+        (admin_user_id, token_hash, channel, expires_at, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
         (admin_id, token_hash, channel, expires_at, now_iso),
     )
 
-    # Prepare email/sms data (logged to console in dev)
+    emailjs_payload = None
+
     if channel == "email":
-        _send_reset_email(admin["email"], token, admin_username)
+        emailjs_payload = _send_reset_email(admin["email"], token, admin_username)
+        success_msg = "Reset email prepared. Sending now..."
     else:
         _send_reset_sms(admin["phone"], token, admin_username)
+        success_msg = "Reset sms sent! Check the console/logs for your 6-digit code."
 
-    # Update rate limit
     _update_rate_limit(admin_id, channel)
 
-    success_msg = f"Reset {channel} sent! "
-    if channel == "email":
-        success_msg += "Check your email for the reset link."
-    else:
-        success_msg += "Check the console/logs for your 6-digit code."
-
-    return render_or_json("admin/forgot_password.html", error=None, success=success_msg)
+    return render_or_json(
+        "admin/forgot_password.html",
+        error=None,
+        success=success_msg,
+        emailjs_payload=emailjs_payload,
+        **_emailjs_config_dict(),
+    )
 
 
 @admin_bp.route("/reset", methods=["GET", "POST"])
