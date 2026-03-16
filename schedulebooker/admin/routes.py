@@ -187,6 +187,7 @@ def _send_reset_email(email: str, token: str, admin_username: str) -> dict:
 
     return email_data
 
+
 def _send_reset_sms(phone: str, code: str, admin_username: str) -> dict:
     """
     Prepare SMS data (we'll send as email since we're not using Twilio).
@@ -258,6 +259,7 @@ def _update_rate_limit(admin_id: int, channel: str):
             (admin_id, channel, now),
         )
 
+
 def _emailjs_config_dict() -> dict:
     return {
         "emailjs_public_key": (current_app.config.get("EMAILJS_PUBLIC_KEY") or "").strip(),
@@ -269,10 +271,9 @@ def _emailjs_config_dict() -> dict:
 def _emailjs_is_configured() -> bool:
     cfg = _emailjs_config_dict()
     return bool(
-        cfg["emailjs_public_key"]
-        and cfg["emailjs_service_id"]
-        and cfg["emailjs_template_id"]
+        cfg["emailjs_public_key"] and cfg["emailjs_service_id"] and cfg["emailjs_template_id"]
     )
+
 
 def _guess_reset_channel(token_input: str) -> str | None:
     token_input = (token_input or "").strip()
@@ -1331,6 +1332,7 @@ def forgot_password():
         emailjs_payload=emailjs_payload,
         **_emailjs_config_dict(),
     )
+
 
 @admin_bp.route("/reset", methods=["GET", "POST"])
 def reset_password():

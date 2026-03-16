@@ -16,11 +16,7 @@ def create_app():
     )
     app.config.from_pyfile("config.py", silent=True)
 
-    app.config["SECRET_KEY"] = (
-        os.environ.get("SECRET_KEY")
-        or app.config.get("SECRET_KEY")
-        or "dev"
-    )
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or app.config.get("SECRET_KEY") or "dev"
 
     # EmailJS config
     app.config["EMAILJS_PUBLIC_KEY"] = os.environ.get("EMAILJS_PUBLIC_KEY", "").strip()
