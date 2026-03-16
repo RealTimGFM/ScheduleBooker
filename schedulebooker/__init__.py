@@ -1,8 +1,11 @@
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, url_for
 
 from . import sqlite_db
+
+load_dotenv()
 
 
 def create_app():
@@ -13,8 +16,17 @@ def create_app():
     )
     app.config.from_pyfile("config.py", silent=True)
 
-    # Environment should win in production. Fallback to config.py, then "dev".
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or app.config.get("SECRET_KEY") or "dev"
+    app.config["SECRET_KEY"] = (
+        os.environ.get("SECRET_KEY")
+        or app.config.get("SECRET_KEY")
+        or "dev"
+    )
+
+    # EmailJS config
+    app.config["EMAILJS_PUBLIC_KEY"] = os.environ.get("EMAILJS_PUBLIC_KEY", "").strip()
+    app.config["EMAILJS_SERVICE_ID"] = os.environ.get("EMAILJS_SERVICE_ID", "").strip()
+    app.config["EMAILJS_TEMPLATE_ID"] = os.environ.get("EMAILJS_TEMPLATE_ID", "").strip()
+    app.config["APP_BASE_URL"] = os.environ.get("APP_BASE_URL", "").strip()
 
     sqlite_db.init_app(app)
 
