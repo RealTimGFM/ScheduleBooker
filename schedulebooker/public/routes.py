@@ -474,6 +474,82 @@ def _count_bookings_for_contact(day: date, phone: str | None, email: str | None)
     return int(row["cnt"]) if row else 0
 
 
+def _load_booking_for_cancellation(booking_id: int, booked_only: bool = True):
+    sql = """
+        SELECT a.*, s.name AS service_name, b.name AS barber_name
+        FROM appointments a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN barbers b ON a.barber_id = b.id
+        WHERE a.id = ?
+    """
+    if booked_only:
+        sql += " AND a.status = 'booked'"
+
+    return query_db(sql, (booking_id,), one=True)
+
+
+def _get_booking_start_in_shop_timezone(start_time_raw: str) -> datetime:
+    start_dt = datetime.fromisoformat(start_time_raw)
+
+    if start_dt.tzinfo is None:
+        start_dt = start_dt.replace(tzinfo=SHOP_TIMEZONE)
+    else:
+        start_dt = start_dt.astimezone(SHOP_TIMEZONE)
+
+    return _floor_to_minute(start_dt)
+
+
+def _validate_customer_cancellation_window(booking) -> str | None:
+    try:
+        booking_start = _get_booking_start_in_shop_timezone(booking["start_time"])
+    except Exception:
+        return "Invalid booking date/time."
+
+    now = _floor_to_minute(datetime.now(SHOP_TIMEZONE))
+
+    if booking_start < now:
+        return "Cannot cancel past bookings."
+
+    time_until_start = (booking_start - now).total_seconds() / 60
+    if time_until_start < 30:
+        return "Cannot cancel within 30 minutes of start time."
+
+    return None
+
+
+def _store_cancellation_and_mark_cancelled(booking, cancelled_by: str):
+    cancelled_at = _iso(datetime.now())
+
+    execute_db(
+        """
+        INSERT INTO cancellations
+        (booking_id, customer_name, customer_phone, customer_email,
+         barber_id, barber_name, service_id, service_name,
+         start_datetime, end_datetime, cancelled_at, cancelled_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            booking["id"],
+            booking["customer_name"],
+            booking["customer_phone"],
+            booking["customer_email"],
+            booking["barber_id"],
+            booking["barber_name"],
+            booking["service_id"],
+            booking["service_name"],
+            booking["start_time"],
+            booking["end_time"],
+            cancelled_at,
+            cancelled_by,
+        ),
+    )
+
+    execute_db(
+        "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
+        (cancelled_at, booking["id"]),
+    )
+
+
 def _generate_booking_code() -> str:
     for _ in range(5):
         code = secrets.token_urlsafe(8).replace("-", "").replace("_", "")
@@ -728,6 +804,19 @@ def book_finish():
             error="Invalid date or time format.",
         )
 
+    # Enforce guest/contact daily max rule from page_contract.md
+    bookings_for_contact = _count_bookings_for_contact(day, customer_phone, customer_email)
+    if bookings_for_contact >= 2:
+        return render_or_json(
+            "public/book_confirm.html",
+            service=service,
+            barber=barber,
+            date=date_str,
+            time=time_str,
+            duration_min=duration_min,
+            error=MAX_BOOKINGS_PER_DAY_MESSAGE,
+        )
+
     user_id = session.get("user_id")
     start_dt, end_dt, err = _validate_public_booking(service, barber, day, start_t, user_id)
     if err:
@@ -834,12 +923,7 @@ def cancel_booking(booking_id: int):
             error="Contact and booking code are required.",
         )
 
-    booking = query_db(
-        "SELECT id, customer_phone, customer_email, booking_code, status "
-        "FROM appointments WHERE id = ?",
-        (booking_id,),
-        one=True,
-    )
+    booking = _load_booking_for_cancellation(booking_id, booked_only=True)
     if not booking:
         bookings = _find_bookings_by_contact(phone, email)
         return render_or_json(
@@ -863,10 +947,17 @@ def cancel_booking(booking_id: int):
             error="Invalid contact or booking code.",
         )
 
-    execute_db(
-        "UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?",
-        (_iso(datetime.now()), booking_id),
-    )
+    cancel_error = _validate_customer_cancellation_window(booking)
+    if cancel_error:
+        bookings = _find_bookings_by_contact(phone, email)
+        return render_or_json(
+            "public/find_booking_results.html",
+            contact=(contact or "").strip(),
+            bookings=bookings,
+            error=cancel_error,
+        )
+
+    _store_cancellation_and_mark_cancelled(booking, "customer")
 
     bookings = _find_bookings_by_contact(phone, email)
     return render_or_json(
@@ -896,18 +987,7 @@ def cancel_booking_api(booking_id: int):
     if not phone:
         return jsonify({"ok": False, "error": "Phone number is required."}), 400
 
-    # Find booking
-    booking = query_db(
-        """
-        SELECT a.*, s.name AS service_name, b.name AS barber_name
-        FROM appointments a
-        LEFT JOIN services s ON a.service_id = s.id
-        LEFT JOIN barbers b ON a.barber_id = b.id
-        WHERE a.id = ? AND a.status = 'booked'
-        """,
-        (booking_id,),
-        one=True,
-    )
+    booking = _load_booking_for_cancellation(booking_id, booked_only=True)
 
     if not booking:
         return (
@@ -915,61 +995,16 @@ def cancel_booking_api(booking_id: int):
             404,
         )
 
-    # Verify phone matches
     if _normalize_phone(booking["customer_phone"]) != phone:
         return (
             jsonify({"ok": False, "error": "Phone number does not match booking."}),
             403,
         )
 
-    # Parse start time
-    try:
-        start_dt = datetime.fromisoformat(booking["start_time"])
-    except Exception:
-        return jsonify({"ok": False, "error": "Invalid booking date/time."}), 500
+    cancel_error = _validate_customer_cancellation_window(booking)
+    if cancel_error:
+        return jsonify({"ok": False, "error": cancel_error}), 400
 
-    # Check if booking is in the past
-    now = _floor_to_minute(datetime.now(SHOP_TIMEZONE))
-    booking_start = _floor_to_minute(start_dt.replace(tzinfo=SHOP_TIMEZONE))
-
-    if booking_start < now:
-        return jsonify({"ok": False, "error": "Cannot cancel past bookings."}), 400
-
-    # Check if within 30 minutes
-    time_until_start = (booking_start - now).total_seconds() / 60
-    if time_until_start < 30:
-        return (
-            jsonify({"ok": False, "error": "Cannot cancel within 30 minutes of start time."}),
-            400,
-        )
-
-    # Insert cancellation record
-    cancelled_at = _iso(datetime.now())
-    execute_db(
-        """
-        INSERT INTO cancellations
-        (booking_id, customer_name, customer_phone, customer_email,
-        barber_id, barber_name, service_id, service_name,
-        start_datetime, end_datetime, cancelled_at, cancelled_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            booking_id,
-            booking["customer_name"],
-            booking["customer_phone"],
-            booking["customer_email"],
-            booking["barber_id"],
-            booking["barber_name"],
-            booking["service_id"],
-            booking["service_name"],
-            booking["start_time"],
-            booking["end_time"],
-            cancelled_at,
-            "customer",
-        ),
-    )
-
-    # Hard delete booking
-    execute_db("DELETE FROM appointments WHERE id = ?", (booking_id,))
+    _store_cancellation_and_mark_cancelled(booking, "customer")
 
     return jsonify({"ok": True, "booking_id": booking_id}), 200

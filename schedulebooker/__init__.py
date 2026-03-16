@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, redirect, url_for
 
 from . import sqlite_db
@@ -7,10 +9,12 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
     app.config.from_mapping(
-        SECRET_KEY="dev",
         DATABASE="appointments.db",
     )
     app.config.from_pyfile("config.py", silent=True)
+
+    # Environment should win in production. Fallback to config.py, then "dev".
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or app.config.get("SECRET_KEY") or "dev"
 
     sqlite_db.init_app(app)
 
@@ -21,8 +25,6 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(appointments_bp)
-
-    # New
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
 

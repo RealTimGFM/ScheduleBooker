@@ -83,10 +83,11 @@ def test_successful_cancellation(client, app):
     data = response.get_json()
     assert data["ok"] is True
 
-    # Verify booking is deleted
+    # Verify booking is still there but marked cancelled
     with app.app_context():
         booking = query_db("SELECT * FROM appointments WHERE id = ?", (booking_id,), one=True)
-        assert booking is None
+        assert booking is not None
+        assert booking["status"] == "cancelled"
 
         # Verify cancellation record exists
         cancellation = query_db(
