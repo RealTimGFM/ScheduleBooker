@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Income · Admin · ScheduleBooker{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="admin-toolbar">
+        <div>
+            <h1 class="admin-title">Income Report</h1>
+            <p class="admin-subtitle">Completed bookings only. Completion time = end time, or start time when end time is empty.</p>
+        </div>
+
+        <div class="admin-toolbar-right">
+            <a class="btn btn-outline" href="{{ url_for('admin.day') }}">Back to Calendar</a>
+        </div>
+    </div>
+
+    <form class="income-filter-card" method="get" action="{{ url_for('admin.income') }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+
+        <div class="income-filter-row">
+            <div class="income-field income-field-date">
+                <label for="income-date">Anchor date</label>
+                <input id="income-date" type="date" name="date" value="{{ date }}">
+            </div>
+
+            <div class="income-field income-field-scope">
+                <label>View</label>
+                <div class="controls income-scope-controls" role="tablist" aria-label="Income range">
+                    <a href="{{ url_for('admin.income', scope='day', date=date) }}" class="btn {{ 'active' if scope == 'day' else 'btn-outline' }}">Day</a>
+                    <a href="{{ url_for('admin.income', scope='month', date=date) }}" class="btn {{ 'active' if scope == 'month' else 'btn-outline' }}">Month</a>
+                    <a href="{{ url_for('admin.income', scope='year', date=date) }}" class="btn {{ 'active' if scope == 'year' else 'btn-outline' }}">Year</a>
+                </div>
+            </div>
+
+            <div class="income-field income-field-actions">
+                <label class="sr-only" for="income-apply">Apply filters</label>
+                <button id="income-apply" class="btn" type="submit">Apply</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="income-period-bar">
+        <a class="btn btn-outline" href="{{ url_for('admin.income', scope=scope, date=prev_date) }}">← Previous</a>
+        <div>
+            <h2 class="income-period-title">{{ report.period_label }}</h2>
+            <p class="muted">Range: {{ report.start_iso }} → {{ report.end_iso }}</p>
+        </div>
+        <a class="btn btn-outline" href="{{ url_for('admin.income', scope=scope, date=next_date) }}">Next →</a>
+    </div>
+
+    <div class="income-summary-grid">
+        <section class="income-stat-card">
+            <p class="income-stat-label">Total income</p>
+            <h3 class="income-stat-value">${{ '%.2f'|format(report.total_income) }}</h3>
+            <p class="muted">Uses the current service price.</p>
+        </section>
+
+        <section class="income-stat-card">
+            <p class="income-stat-label">Completed bookings</p>
+            <h3 class="income-stat-value">{{ report.bookings_count }}</h3>
+            <p class="muted">Booked appointments whose completion time has passed.</p>
+        </section>
+
+        <section class="income-stat-card">
+            <p class="income-stat-label">Cancelled count</p>
+            <h3 class="income-stat-value">{{ report.cancelled_count }}</h3>
+            <p class="muted">Counted by cancellation timestamp in this period.</p>
+        </section>
+
+        <section class="income-stat-card">
+            <p class="income-stat-label">Services in report</p>
+            <h3 class="income-stat-value">{{ report.services_count }}</h3>
+            <p class="muted">Unique services with at least one completed booking.</p>
+        </section>
+    </div>
+
+    <div class="table-card income-table-card">
+        <div class="income-card-header">
+            <div>
+                <h2>Service breakdown</h2>
+                <p class="muted">Revenue and completed booking count by service for the selected period.</p>
+            </div>
+        </div>
+
+        <div class="income-table-scroll">
+            <table class="table income-table">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Completed bookings</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report.services_breakdown %}
+                    <tr>
+                        <td class="income-td-strong">{{ item.service_name }}</td>
+                        <td>{{ item.bookings_count }}</td>
+                        <td>${{ '%.2f'|format(item.revenue) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="muted">No completed bookings in this period yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
