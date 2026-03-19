@@ -128,6 +128,127 @@ def _month_end_exclusive(d: date) -> date:
 def _week_start_monday(d: date) -> date:
     return d - timedelta(days=d.weekday())  # Monday=0
 
+def _year_start(d: date) -> date:
+    return date(d.year, 1, 1)
+
+
+def _year_end_exclusive(d: date) -> date:
+    return date(d.year + 1, 1, 1)
+
+
+def _scope_bounds(scope: str, selected_day: date) -> tuple[datetime, datetime, str]:
+    if scope == "month":
+        start_day = _month_start(selected_day)
+        end_day = _month_end_exclusive(selected_day)
+        label = start_day.strftime("%B %Y")
+    elif scope == "year":
+        start_day = _year_start(selected_day)
+        end_day = _year_end_exclusive(selected_day)
+        label = start_day.strftime("%Y")
+    else:
+        start_day = selected_day
+        end_day = selected_day + timedelta(days=1)
+        label = selected_day.strftime("%B %d, %Y")
+
+    return (
+        datetime.combine(start_day, time(0, 0)),
+        datetime.combine(end_day, time(0, 0)),
+        label,
+    )
+
+
+def _shift_scope_date(scope: str, selected_day: date, direction: int) -> date:
+    if scope == "month":
+        shifted = selected_day.replace(day=1)
+        if direction > 0:
+            return _month_end_exclusive(shifted)
+        prev_month_end = shifted - timedelta(days=1)
+        return prev_month_end.replace(day=1)
+
+    if scope == "year":
+        target_year = selected_day.year + direction
+        try:
+            return selected_day.replace(year=target_year)
+        except ValueError:
+            return selected_day.replace(year=target_year, day=28)
+
+    return selected_day + timedelta(days=direction)
+
+
+def _build_income_report(selected_day: date, scope: str) -> dict:
+    start_dt, end_dt, period_label = _scope_bounds(scope, selected_day)
+    now_iso = _iso(datetime.now())
+
+    completed_rows = query_db(
+        """
+        SELECT a.id,
+               a.customer_name,
+               a.start_time,
+               a.end_time,
+               a.service_id,
+               s.name  AS service_name,
+               s.price AS service_price
+        FROM appointments a
+        LEFT JOIN services s ON s.id = a.service_id
+        WHERE a.status = 'booked'
+          AND COALESCE(a.end_time, a.start_time) >= ?
+          AND COALESCE(a.end_time, a.start_time) < ?
+          AND COALESCE(a.end_time, a.start_time) <= ?
+        ORDER BY COALESCE(a.end_time, a.start_time) ASC, a.id ASC
+        """,
+        (_iso(start_dt), _iso(end_dt), now_iso),
+    )
+
+    cancelled_rows = query_db(
+        """
+        SELECT id, booking_id, service_name, cancelled_at, cancelled_by
+        FROM cancellations
+        WHERE cancelled_at >= ? AND cancelled_at < ?
+        ORDER BY cancelled_at DESC, id DESC
+        """,
+        (_iso(start_dt), _iso(end_dt)),
+    )
+
+    total_income = 0.0
+    services_map: dict[tuple[int | None, str], dict] = {}
+
+    for row in completed_rows:
+        price = float(row["service_price"] or 0)
+        total_income += price
+
+        service_id = row["service_id"]
+        service_name = row["service_name"] or "Unknown service"
+        key = (service_id, service_name)
+
+        if key not in services_map:
+            services_map[key] = {
+                "service_id": service_id,
+                "service_name": service_name,
+                "bookings_count": 0,
+                "revenue": 0.0,
+            }
+
+        services_map[key]["bookings_count"] += 1
+        services_map[key]["revenue"] += price
+
+    services_breakdown = sorted(
+        services_map.values(),
+        key=lambda item: (-item["revenue"], item["service_name"].lower()),
+    )
+
+    return {
+        "scope": scope,
+        "date": selected_day.isoformat(),
+        "period_label": period_label,
+        "start_iso": start_dt.date().isoformat(),
+        "end_iso": (end_dt - timedelta(days=1)).date().isoformat(),
+        "total_income": round(total_income, 2),
+        "bookings_count": len(completed_rows),
+        "cancelled_count": len(cancelled_rows),
+        "services_count": len(services_breakdown),
+        "services_breakdown": services_breakdown,
+    }
+
 
 # =============================================================================
 # Admin Settings: Password Reset & Profile Management
@@ -517,6 +638,30 @@ def day():
         error=None,
     )
 
+@admin_bp.get("/income")
+def income():
+    if not require_admin():
+        return redirect(url_for("admin.login", next=request.full_path))
+
+    scope = (request.args.get("scope") or "day").strip().lower()
+    if scope not in {"day", "month", "year"}:
+        scope = "day"
+
+    selected_day = _parse_date(request.args.get("date")) or date.today()
+    report = _build_income_report(selected_day, scope)
+
+    prev_date = _shift_scope_date(scope, selected_day, -1).isoformat()
+    next_date = _shift_scope_date(scope, selected_day, 1).isoformat()
+
+    return render_or_json(
+        "admin/income.html",
+        scope=scope,
+        date=selected_day.isoformat(),
+        report=report,
+        prev_date=prev_date,
+        next_date=next_date,
+        error=None,
+    )
 
 @admin_bp.post("/book")
 def create_booking():

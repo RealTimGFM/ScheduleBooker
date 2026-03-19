@@ -1827,3 +1827,132 @@ body.calendar-fullscreen #day-view .day-calendar {
   box-shadow: 0 6px 18px rgba(255, 77, 77, 0.55);
   filter: brightness(1.05);
 }
+
+/* ==========================================================================
+   Admin Income page
+   ========================================================================== */
+
+.income-filter-card,
+.income-stat-card,
+.income-table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.income-filter-card {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.income-filter-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.income-field label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.income-field input {
+  width: 100%;
+}
+
+.income-scope-controls {
+  gap: 12px;
+}
+
+.income-period-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.income-period-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.income-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.income-stat-card {
+  padding: 18px;
+}
+
+.income-stat-label {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.income-stat-value {
+  margin: 0 0 8px;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.income-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.income-table-card {
+  padding: 18px;
+  margin-bottom: 24px;
+}
+
+.income-table-scroll {
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.income-table th,
+.income-table td {
+  padding: 14px 12px;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+.income-td-strong {
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .income-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .income-filter-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .income-period-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .income-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
