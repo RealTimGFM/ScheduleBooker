@@ -128,6 +128,7 @@ def _month_end_exclusive(d: date) -> date:
 def _week_start_monday(d: date) -> date:
     return d - timedelta(days=d.weekday())  # Monday=0
 
+
 def _year_start(d: date) -> date:
     return date(d.year, 1, 1)
 
@@ -638,6 +639,7 @@ def day():
         error=None,
     )
 
+
 @admin_bp.get("/income")
 def income():
     if not require_admin():
@@ -662,6 +664,7 @@ def income():
         next_date=next_date,
         error=None,
     )
+
 
 @admin_bp.post("/book")
 def create_booking():
