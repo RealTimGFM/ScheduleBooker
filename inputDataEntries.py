@@ -71,7 +71,9 @@ def load_seed_dependencies() -> tuple[list[dict], list[dict]]:
     return services, barbers
 
 
-def build_demo_datetimes(index: int, rng: random.Random, now: datetime) -> tuple[datetime, datetime | None, datetime]:
+def build_demo_datetimes(
+    index: int, rng: random.Random, now: datetime
+) -> tuple[datetime, datetime | None, datetime]:
     # Spread rows across roughly the last 120 days so day/month/year views all have data.
     day_offset = rng.randint(0, 119)
     base_day = (now - timedelta(days=day_offset)).date()
@@ -215,11 +217,15 @@ def seed_demo_rows(count: int) -> None:
     print(f"Booked/completed rows: {inserted_booked}")
     print(f"Cancelled rows:        {inserted_cancelled}")
     print(f"Total rows inserted:   {count}")
-    print("Use the Admin > Income page and switch between Day / Month / Year to see the seeded data.")
+    print(
+        "Use the Admin > Income page and switch between Day / Month / Year to see the seeded data."
+    )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed demo appointment rows for the income tab.")
+    parser = argparse.ArgumentParser(
+        description="Seed demo appointment rows for the income tab."
+    )
     parser.add_argument(
         "--count",
         type=int,
