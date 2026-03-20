@@ -4,3 +4,6 @@ dump_project.py
 dump.txt
 *cache*
 *.pyc
+.tmp/
+.test_tmp/
+tmpnetynvbn/

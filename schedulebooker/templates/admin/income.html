@@ -10,7 +10,9 @@
     <div class="admin-toolbar">
         <div>
             <h1 class="admin-title">Income Report</h1>
-            <p class="admin-subtitle">Completed bookings only. Completion time = end time, or start time when end time is empty.</p>
+            <p class="admin-subtitle">
+                Completed bookings only. Completion time = end time, or start time when end time is empty.
+            </p>
         </div>
 
         <div class="admin-toolbar-right">
@@ -30,15 +32,23 @@
             <div class="income-field income-field-scope">
                 <label>View</label>
                 <div class="controls income-scope-controls" role="tablist" aria-label="Income range">
-                    <a href="{{ url_for('admin.income', scope='day', date=date) }}" class="btn {{ 'active' if scope == 'day' else 'btn-outline' }}">Day</a>
-                    <a href="{{ url_for('admin.income', scope='month', date=date) }}" class="btn {{ 'active' if scope == 'month' else 'btn-outline' }}">Month</a>
-                    <a href="{{ url_for('admin.income', scope='year', date=date) }}" class="btn {{ 'active' if scope == 'year' else 'btn-outline' }}">Year</a>
+                    <a href="{{ url_for('admin.income', scope='day', date=date) }}"
+                       class="btn {{ 'active' if scope == 'day' else 'btn-outline' }}">
+                        Day
+                    </a>
+                    <a href="{{ url_for('admin.income', scope='month', date=date) }}"
+                       class="btn {{ 'active' if scope == 'month' else 'btn-outline' }}">
+                        Month
+                    </a>
+                    <a href="{{ url_for('admin.income', scope='year', date=date) }}"
+                       class="btn {{ 'active' if scope == 'year' else 'btn-outline' }}">
+                        Year
+                    </a>
                 </div>
             </div>
 
-            <div class="income-field income-field-actions">
-                <label class="sr-only" for="income-apply">Apply filters</label>
-                <button id="income-apply" class="btn" type="submit">Apply</button>
+            <div class="income-field income-field-submit">
+                <button class="btn" type="submit">Apply</button>
             </div>
         </div>
     </form>
@@ -78,6 +88,56 @@
         </section>
     </div>
 
+    <div class="income-chart-grid">
+        <section class="income-chart-card">
+            <div class="income-card-header">
+                <div>
+                    <h2>Revenue trend</h2>
+                    <p class="muted">
+                        {% if scope == "day" %}
+                        Revenue by completion hour.
+                        {% elif scope == "month" %}
+                        Revenue by day of month.
+                        {% else %}
+                        Revenue by month.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div id="income-revenue-chart" class="income-chart-canvas"></div>
+        </section>
+
+        <section class="income-chart-card">
+            <div class="income-card-header">
+                <div>
+                    <h2>Booking activity</h2>
+                    <p class="muted">Completed vs cancelled counts in the selected period.</p>
+                </div>
+            </div>
+            <div id="income-activity-chart" class="income-chart-canvas"></div>
+        </section>
+
+        <section class="income-chart-card">
+            <div class="income-card-header">
+                <div>
+                    <h2>Revenue by service</h2>
+                    <p class="muted">Top services ranked by revenue.</p>
+                </div>
+            </div>
+            <div id="income-services-chart" class="income-bars-root"></div>
+        </section>
+
+        <section class="income-chart-card">
+            <div class="income-card-header">
+                <div>
+                    <h2>Revenue by barber</h2>
+                    <p class="muted">Who generated the most revenue in this period.</p>
+                </div>
+            </div>
+            <div id="income-barbers-chart" class="income-bars-root"></div>
+        </section>
+    </div>
+
     <div class="table-card income-table-card">
         <div class="income-card-header">
             <div>
@@ -112,4 +172,17 @@
         </div>
     </div>
 </div>
+
+<script id="income-chart-data" type="application/json">
+{{ {
+    "scope": scope,
+    "trend_points": report.trend_points,
+    "services_breakdown": report.services_breakdown,
+    "barbers_breakdown": report.barbers_breakdown
+} | tojson }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin_income.js') }}"></script>
 {% endblock %}

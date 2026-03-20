@@ -1956,3 +1956,175 @@ body.calendar-fullscreen #day-view .day-calendar {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Admin Income charts
+   ========================================================================== */
+
+.income-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.income-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 18px;
+}
+
+.income-chart-canvas,
+.income-bars-root {
+  min-height: 300px;
+}
+
+.income-svg {
+  width: 100%;
+  height: 280px;
+  display: block;
+}
+
+.income-grid-line {
+  stroke: rgba(255, 255, 255, 0.10);
+  stroke-width: 1;
+}
+
+body:not([data-theme="dark"]) .income-grid-line {
+  stroke: rgba(0, 0, 0, 0.08);
+}
+
+.income-axis-label {
+  fill: var(--text-soft);
+  font-size: 11px;
+}
+
+.income-area-fill {
+  fill: rgba(211, 47, 47, 0.14);
+}
+
+.income-line-path {
+  fill: none;
+  stroke: var(--red-main);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.income-line-dot {
+  fill: var(--red-main);
+}
+
+.income-bar {
+  rx: 4;
+  ry: 4;
+}
+
+.income-bar-completed {
+  fill: var(--red-main);
+}
+
+.income-bar-cancelled {
+  fill: rgba(201, 162, 77, 0.95);
+}
+
+.income-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.income-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.income-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.income-legend-completed {
+  background: var(--red-main);
+}
+
+.income-legend-cancelled {
+  background: rgba(201, 162, 77, 0.95);
+}
+
+.income-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.income-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.income-bar-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.income-bar-item-label {
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.income-bar-item-value {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.income-bar-track {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+body:not([data-theme="dark"]) .income-bar-track {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.income-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--red-main), var(--red-dark));
+}
+
+.income-bar-item-meta {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.income-empty {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  border: 1px dashed var(--border-soft);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .income-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}

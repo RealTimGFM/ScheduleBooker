@@ -27,10 +27,12 @@ def create_app():
     sqlite_db.init_app(app)
 
     from .admin import admin_bp
+    from .api.v1 import api_v1_bp
     from .appointments import appointments_bp
     from .auth import auth_bp
     from .public import public_bp
 
+    app.register_blueprint(api_v1_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(appointments_bp)
     app.register_blueprint(public_bp)

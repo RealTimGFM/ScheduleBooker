@@ -1,215 +1,270 @@
 # ScheduleBooker
 
-ScheduleBooker is a simple barbershop scheduling app built with **Flask + SQLite**.
+ScheduleBooker is a Flask appointment-booking app for a barbershop. It keeps the current server-rendered website working while moving toward a cleaner backend structure that can support future `/api/v1/...` endpoints and mobile clients.
 
-It has:
+The app currently includes:
 
-- A **public booking flow** (browse services → pick a time slot → confirm → finish).
-- **Guest self-service** (find bookings + cancel using a booking code).
-- A lightweight **admin panel** (day calendar + manage services + manage barbers + settings).
+- a public booking flow
+- guest booking lookup and cancellation
+- a customer appointments area
+- an admin panel
+- a small reusable service/repository layer
+- a real `/api/v1` namespace for read-only API access
 
-> Note: The app timezone is **America/Toronto (Montreal)** and shop hours are **Tue–Sun 11:00–19:00** (closed Monday). Slot grid is **30 minutes**.
+## What the app does
 
----
+### Public / guest features
 
-## About this project
+- Browse active services
+- View availability by date and barber
+- Book appointments through a confirm and finish flow
+- Find bookings by phone or email
+- Cancel a booking with contact info and booking code
 
-This project was created to give a barbershop a clean, simple scheduling system:
+### Customer account features
 
-- Customers can book quickly without needing accounts.
-- Admin can manage the schedule and business data (services, barbers) in one place.
-- Built with a “keep it simple” approach: server-rendered pages, SQLite database, and minimal moving parts.
+- Sign up with phone + PIN
+- Log in with phone + PIN
+- View personal appointments
+- Create, edit, and delete personal appointments
 
----
+### Admin features
 
-## Technologies used
+- Admin login and session-based access
+- Day calendar view
+- Create, edit, and delete bookings
+- Service management
+- Barber management
+- Income report view
+- Admin profile and password management
+- Password reset flow with EmailJS support
 
-- **Backend:** Python, Flask
-- **Frontend:** HTML, CSS, JavaScript (server-rendered templates + EmailJS for admin reset email)
-- **Database:** SQLite (stored under the `instance/` folder by default)
-- **Tooling:** pytest, ruff
-- **Deploy:** Render (AWS EC2 in the future)
+## Current architecture
 
----
+This project stays as one Flask repo and keeps the app factory pattern.
 
-## What you can do (features)
+### Backend structure
 
-### Customer / Guest (Public)
+```text
+schedulebooker/
+  __init__.py
+  admin/
+  api/
+    v1/
+  appointments/
+  auth/
+  public/
+  repositories/
+  services/
+  static/
+  templates/
+  schema.sql
+  schema_postgres.sql
+  sqlite_db.py
+```
 
-- Browse services (categorized, priced, duration-based).
-- Pick a service and view available time slots for a date.
-- Book an appointment (two-step flow: confirm → finish).
-- Get a **booking code** after booking (used for guest self-service).
-- Find bookings using **phone OR email**.
-- Cancel a booking (guest cancellation requires **booking_code** for security).
+### Design direction
 
-### Admin (Back Office)
+- Web routes remain in blueprints
+- Shared booking rules live in `schedulebooker/services/`
+- Raw database queries are being moved into `schedulebooker/repositories/`
+- SQLite is the default local database
+- PostgreSQL is supported through `DATABASE_URL`
 
-- Login and view the **day calendar**.
-- Create bookings directly from the calendar.
-- Manage **services** (create/edit/activate/deactivate).
-- Manage **barbers** (create/edit/activate/deactivate).
-- Admin settings:
-  - Update profile information (requires current password).
-  - Change password (min 8 chars).
-  - Forgot password via Email (link) or SMS (code).
+This keeps the current website simple while making future API/mobile work easier.
 
----
+## Main blueprints
 
-## How it works (simple)
+- `public` for guest-facing pages
+- `auth` for customer login/signup
+- `appointments` for logged-in customer appointments
+- `admin` for back-office tools
+- `api_v1` for `/api/v1/...`
 
-### Public booking flow
+## Tech stack
 
-1) Customer opens the public site and chooses a service.
-2) Customer selects a date and a time slot (30-min grid).
-3) App shows a **confirm** step (no DB write yet).
-4) On “Finish”, the booking is saved and a **booking code** is generated.
+- Python
+- Flask
+- SQLite for local development
+- PostgreSQL support through `psycopg2`
+- HTML, CSS, JavaScript
+- pytest
+- ruff
+- python-dotenv
+- EmailJS for admin password reset emails
 
-### Guest self-service
+## Booking rules
 
-- Guests can search bookings with **phone OR email**.
-- Guests can only cancel/edit when they provide the correct **booking_code** (prevents random cancellations if someone knows a phone number).
+- App timezone: `America/Toronto`
+- Shop hours: Tuesday to Sunday, `11:00` to `19:00`
+- Monday is closed
+- Time grid uses 30-minute slots
+- Shop capacity is limited per 30-minute segment
+- Public bookings cannot be created in the past
+- Customer cancellations are blocked within 30 minutes of start time
 
-### Database
+## Local setup
 
-- App uses SQLite and stores the DB file in `instance/appointments.db` by default.
-- The root route `/` redirects to the internal appointments list; the public entry point is `/services`.
-
----
-
-## Run it locally
-
-### 1) Create a virtual environment + install dependencies
+### 1. Create a virtual environment
 
 ```bash
 python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
+```
 
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2) Initialize the database (schema + seed data)
+### 3. Initialize the database
 
 ```bash
 python create_db.py
 ```
 
-This runs `schedulebooker/schema.sql` and seeds initial services (and other starter data).
+This will:
 
-### 3) Run the app
+- create the schema
+- seed starter services
+- seed starter barbers
+- create a default admin account
+
+### 4. Run the app
 
 ```bash
 python app.py
 ```
 
-App will run in debug mode locally.
+### 5. Open it in the browser
 
-### 4) Open the app
+- Public site: `http://127.0.0.1:5000/services`
+- Customer login: `http://127.0.0.1:5000/auth/login`
+- Admin login: `http://127.0.0.1:5000/admin/login`
 
-- Public: `http://127.0.0.1:5000/services`
-- Admin:  `http://127.0.0.1:5000/admin/login`
+Note: the root route `/` redirects to the customer appointments area, so `/services` is the public entry point.
 
-### Default admin credentials (local seed)
+## Default local admin account
+
+`create_db.py` seeds this default admin account if no admin exists yet:
 
 - Username: `T`
 - Password: `1`
 
-(You should change the password in Admin Settings after first login.)
+Change it after first login.
 
----
+## Database notes
 
-## Deploy on Render
+### SQLite
 
-This repo includes a Render blueprint:
+- Default local DB path: `instance/appointments.db`
+- Good for local development and small deployments
 
-- `render.yaml`
-- `start.sh` (Gunicorn start)
+### PostgreSQL
 
-### Typical steps
+PostgreSQL is supported through `DATABASE_URL`.
 
-1) Create a new **Web Service** on Render and connect this GitHub repo.
-2) Render should auto-detect `render.yaml`. If not, set:
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `./start.sh`
+- `sqlite_db.py` switches backend based on `DATABASE_URL`
+- `create_db.py` uses `schema_postgres.sql` when PostgreSQL is configured
 
-### Important note about SQLite on hosting
+This keeps local development simple while preserving a production migration path.
 
-SQLite is fine for local dev and demos. For real production usage, you should use:
+## API v1 endpoints
 
-- A persistent disk (so the SQLite file isn’t lost on redeploy), or
-- A real hosted database like PostgreSQL (recommended long-term).
+The app now includes a small real API namespace under `/api/v1`.
 
----
+Current endpoints:
 
-## Automatic bug checking on GitHub
+- `GET /api/v1/health`
+- `GET /api/v1/services`
+- `GET /api/v1/barbers`
+- `GET /api/v1/availability?service_id=...&date=YYYY-MM-DD&barber_id=...`
 
-A GitHub Actions workflow runs on push/PR to keep the project clean:
+These endpoints reuse existing repository/service logic rather than duplicating business rules.
 
-- Ruff lint check + format check
-- Pytest test suite
-- Basic dependency security audit
+## Testing
 
----
+Run the test suite with:
 
-## Notes
+```bash
+pytest -q
+```
 
-- Timezone is fixed to Montreal time (America/Toronto).
-- Slot grid is 30 minutes (11:00, 11:30, 12:00, ...).
-- Guest self-service is intentionally protected by booking_code to prevent abuse.
-- If you want “real hosting” stability, plan a migration to PostgreSQL later.
+The repo also includes a local pytest configuration so tests collect only from `tests/` and use a workspace-local temp directory.
 
----
+## Linting
 
-## Email Configuration (EmailJS)
+```bash
+python -m ruff check .
+```
 
-This app uses **EmailJS** for **admin password reset emails**.
+## EmailJS configuration
 
-### Setup:
+EmailJS is used for admin password reset emails.
 
-1) Create a free account at https://www.emailjs.com/
-2) Add an email service (Gmail recommended)
-3) Create an email template with these variables:
-   - `{{to_email}}` — recipient email
-   - `{{to_name}}` — admin username
-   - `{{reset_url}}` — password reset link
-4) Add credentials to `.env`:
+Add these values to `.env`:
 
 ```env
 EMAILJS_PUBLIC_KEY=your_key
 EMAILJS_SERVICE_ID=your_service
 EMAILJS_TEMPLATE_ID=your_template
+APP_BASE_URL=http://127.0.0.1:5000
 ```
 
-### Development mode
+Expected template variables:
 
-- Reset links are logged to console (no real email is sent).
+- `to_email`
+- `to_name`
+- `reset_url`
 
-### Production mode
+## Deployment
 
-- Configure EmailJS keys in `.env`
-- Emails are sent via EmailJS
-- Rate limiting is enabled to reduce abuse
+This repo includes:
 
----
+- `render.yaml`
+- `start.sh`
+- `wsgi.py`
 
-## Future improvements
+Typical Render flow:
 
-- Switch from SQLite to PostgreSQL for production stability.
-- Better analytics / reporting (daily totals, barber performance, etc.).
-- Better admin calendar UX (drag/drop, resizing, conflict highlighting).
+1. Connect the repo to Render
+2. Install with `pip install -r requirements.txt`
+3. Start with `./start.sh`
+4. Set environment variables such as `SECRET_KEY` and optionally `DATABASE_URL`
 
----
+For real production use, PostgreSQL is the better long-term choice.
 
-## Members
+## Current status
+
+The codebase already matches several important architectural goals:
+
+- one Flask repo
+- app factory pattern
+- blueprint-based web structure
+- shared booking service logic
+- repository layer started
+- real `/api/v1` namespace
+- SQLite local support with PostgreSQL direction preserved
+
+The main area still worth refactoring later is `schedulebooker/admin/routes.py`, which is still large and owns a lot of direct SQL and business logic.
+
+## Team
 
 - TimGFM
 - TriBo
 - Chunkyboi
-
----
 
 ## How to fix lint-format
 
