@@ -7,7 +7,15 @@ import time as pytime
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import current_app, jsonify, redirect, render_template, request, session, url_for
+from flask import (
+    current_app,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from jinja2 import TemplateNotFound
 from werkzeug.security import (
     check_password_hash,
@@ -176,6 +184,57 @@ def _shift_scope_date(scope: str, selected_day: date, direction: int) -> date:
     return selected_day + timedelta(days=direction)
 
 
+def _build_trend_points(scope: str, selected_day: date) -> list[dict]:
+    if scope == "year":
+        return [
+            {
+                "label": datetime(selected_day.year, month, 1).strftime("%b"),
+                "income": 0.0,
+                "bookings": 0,
+                "cancellations": 0,
+            }
+            for month in range(1, 13)
+        ]
+
+    if scope == "month":
+        days_in_month = (_month_end_exclusive(selected_day) - _month_start(selected_day)).days
+        return [
+            {
+                "label": str(day_num),
+                "income": 0.0,
+                "bookings": 0,
+                "cancellations": 0,
+            }
+            for day_num in range(1, days_in_month + 1)
+        ]
+
+    return [
+        {
+            "label": f"{hour:02d}:00",
+            "income": 0.0,
+            "bookings": 0,
+            "cancellations": 0,
+        }
+        for hour in range(24)
+    ]
+
+
+def _trend_point_index(scope: str, selected_day: date, dt: datetime) -> int | None:
+    if scope == "year":
+        if dt.year != selected_day.year:
+            return None
+        return dt.month - 1
+
+    if scope == "month":
+        if dt.year != selected_day.year or dt.month != selected_day.month:
+            return None
+        return dt.day - 1
+
+    if dt.date() != selected_day:
+        return None
+    return dt.hour
+
+
 def _build_income_report(selected_day: date, scope: str) -> dict:
     start_dt, end_dt, period_label = _scope_bounds(scope, selected_day)
     now_iso = _iso(datetime.now())
@@ -187,10 +246,13 @@ def _build_income_report(selected_day: date, scope: str) -> dict:
                a.start_time,
                a.end_time,
                a.service_id,
-               s.name  AS service_name,
-               s.price AS service_price
+               s.name AS service_name,
+               s.price AS service_price,
+               b.name AS barber_name,
+               COALESCE(a.end_time, a.start_time) AS completed_at
         FROM appointments a
         LEFT JOIN services s ON s.id = a.service_id
+        LEFT JOIN barbers b ON b.id = a.barber_id
         WHERE a.status = 'booked'
           AND COALESCE(a.end_time, a.start_time) >= ?
           AND COALESCE(a.end_time, a.start_time) < ?
@@ -212,6 +274,8 @@ def _build_income_report(selected_day: date, scope: str) -> dict:
 
     total_income = 0.0
     services_map: dict[tuple[int | None, str], dict] = {}
+    barbers_map: dict[str, dict] = {}
+    trend_points = _build_trend_points(scope, selected_day)
 
     for row in completed_rows:
         price = float(row["service_price"] or 0)
@@ -219,23 +283,60 @@ def _build_income_report(selected_day: date, scope: str) -> dict:
 
         service_id = row["service_id"]
         service_name = row["service_name"] or "Unknown service"
-        key = (service_id, service_name)
+        service_key = (service_id, service_name)
 
-        if key not in services_map:
-            services_map[key] = {
+        if service_key not in services_map:
+            services_map[service_key] = {
                 "service_id": service_id,
                 "service_name": service_name,
                 "bookings_count": 0,
                 "revenue": 0.0,
             }
 
-        services_map[key]["bookings_count"] += 1
-        services_map[key]["revenue"] += price
+        services_map[service_key]["bookings_count"] += 1
+        services_map[service_key]["revenue"] += price
+
+        barber_name = row["barber_name"] or "Any barber"
+        if barber_name not in barbers_map:
+            barbers_map[barber_name] = {
+                "barber_name": barber_name,
+                "bookings_count": 0,
+                "revenue": 0.0,
+            }
+
+        barbers_map[barber_name]["bookings_count"] += 1
+        barbers_map[barber_name]["revenue"] += price
+
+        try:
+            completed_at = datetime.fromisoformat(row["completed_at"])
+            idx = _trend_point_index(scope, selected_day, completed_at)
+            if idx is not None and 0 <= idx < len(trend_points):
+                trend_points[idx]["income"] += price
+                trend_points[idx]["bookings"] += 1
+        except Exception:
+            pass
+
+    for row in cancelled_rows:
+        try:
+            cancelled_at = datetime.fromisoformat(row["cancelled_at"])
+            idx = _trend_point_index(scope, selected_day, cancelled_at)
+            if idx is not None and 0 <= idx < len(trend_points):
+                trend_points[idx]["cancellations"] += 1
+        except Exception:
+            pass
 
     services_breakdown = sorted(
         services_map.values(),
         key=lambda item: (-item["revenue"], item["service_name"].lower()),
     )
+
+    barbers_breakdown = sorted(
+        barbers_map.values(),
+        key=lambda item: (-item["revenue"], item["barber_name"].lower()),
+    )
+
+    for point in trend_points:
+        point["income"] = round(point["income"], 2)
 
     return {
         "scope": scope,
@@ -248,6 +349,8 @@ def _build_income_report(selected_day: date, scope: str) -> dict:
         "cancelled_count": len(cancelled_rows),
         "services_count": len(services_breakdown),
         "services_breakdown": services_breakdown,
+        "barbers_breakdown": barbers_breakdown,
+        "trend_points": trend_points,
     }
 
 

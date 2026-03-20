@@ -173,7 +173,9 @@ def build_time_slots(
 
         parsed.append({"barber_id": booking.get("barber_id"), "start": start_dt, "end": end_dt})
 
-    effective_shop_cap = min(SHOP_CAPACITY_PER_SLOT, len(active_barber_ids)) if active_barber_ids else 0
+    effective_shop_cap = (
+        min(SHOP_CAPACITY_PER_SLOT, len(active_barber_ids)) if active_barber_ids else 0
+    )
     slots = []
     cursor = datetime.combine(day, OPEN)
     last_start = datetime.combine(day, LAST_END_TIME) - timedelta(minutes=duration_min)
@@ -185,13 +187,19 @@ def build_time_slots(
         slot_datetime = slot_start.replace(tzinfo=SHOP_TIMEZONE).replace(second=0, microsecond=0)
 
         if slot_datetime < now:
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Past"})
+            slots.append(
+                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Past"}
+            )
             cursor += timedelta(minutes=30)
             continue
 
         if effective_shop_cap == 0:
             slots.append(
-                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "No barbers"}
+                {
+                    "time": slot_start.strftime("%H:%M"),
+                    "is_available": False,
+                    "reason": "No barbers",
+                }
             )
             cursor += timedelta(minutes=30)
             continue
@@ -207,7 +215,9 @@ def build_time_slots(
                 break
 
         if is_full:
-            slots.append({"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"})
+            slots.append(
+                {"time": slot_start.strftime("%H:%M"), "is_available": False, "reason": "Full"}
+            )
             cursor += timedelta(minutes=30)
             continue
 
@@ -284,7 +294,11 @@ def validate_public_booking(
                 continue
 
             if overlaps(booking_start, booking_end, start_dt, end_dt):
-                return None, None, "You already have an appointment at this time. Cannot double-book."
+                return (
+                    None,
+                    None,
+                    "You already have an appointment at this time. Cannot double-book.",
+                )
 
     if barber is not None:
         for booking in existing:
