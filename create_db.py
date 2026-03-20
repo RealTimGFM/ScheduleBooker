@@ -48,15 +48,15 @@ with app.app_context():
     if row and row["c"] == 0:
         services = [
             # name, category, duration_min, price, price_is_from, price_label, is_popular, sort_order
-            ("Coupe (Homme)", "Homme", 30, 15.0, 0, None, 1, 1),
-            ("Teinture (Homme)", "Homme", 60, 35.0, 1, None, 0, 2),
-            ("Coupe (Femme)", "Femme", 60, 18.0, 1, None, 1, 10),
-            ("Coupe + Placer (Femme)", "Femme", 60, 25.0, 1, None, 0, 11),
-            ("Laver + Placer (Femme)", "Femme", 60, 20.0, 0, None, 0, 12),
-            ("Teinture (Femme)", "Femme", 120, 70.0, 0, None, 0, 13),
-            ("Permanent", "Femme", 120, 60.0, 0, None, 0, 14),
-            ("Highlight", "Femme", 150, 120.0, 1, None, 0, 15),
-            ("Lissage", "Femme", 180, 150.0, 1, None, 0, 16),
+            ("Men's Haircut", "Men", 30, 15.0, 0, None, 1, 1),
+            ("Men's Hair Coloring", "Men", 60, 35.0, 1, None, 0, 2),
+            ("Women's Haircut", "Women", 60, 18.0, 1, None, 1, 10),
+            ("Women's Haircut + Style", "Women", 60, 25.0, 1, None, 0, 11),
+            ("Wash + Style", "Women", 60, 20.0, 0, None, 0, 12),
+            ("Women's Hair Coloring", "Women", 120, 70.0, 0, None, 0, 13),
+            ("Perm", "Women", 120, 60.0, 0, None, 0, 14),
+            ("Highlights", "Women", 150, 120.0, 1, None, 0, 15),
+            ("Straightening", "Women", 180, 150.0, 1, None, 0, 16),
         ]
 
         for name, category, dur, price, price_is_from, price_label, popular, order in services:
