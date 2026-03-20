@@ -215,7 +215,7 @@ def _build_trend_points(scope: str, selected_day: date) -> list[dict]:
             "bookings": 0,
             "cancellations": 0,
         }
-        for hour in range(24)
+        for hour in range(DAY_START_HOUR, DAY_END_HOUR + 1)
     ]
 
 
@@ -232,7 +232,9 @@ def _trend_point_index(scope: str, selected_day: date, dt: datetime) -> int | No
 
     if dt.date() != selected_day:
         return None
-    return dt.hour
+    if dt.hour < DAY_START_HOUR or dt.hour > DAY_END_HOUR:
+        return None
+    return dt.hour - DAY_START_HOUR
 
 
 def _build_income_report(selected_day: date, scope: str) -> dict:
