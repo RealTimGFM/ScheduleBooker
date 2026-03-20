@@ -901,7 +901,7 @@ def delete_booking(booking_id: int):
 # Admin: Services CRUD (with soft-delete via is_active=0)
 # =============================================================================
 
-ALLOWED_SERVICE_CATEGORIES = ("Homme", "Femme", "General")
+ALLOWED_SERVICE_CATEGORIES = ("Men", "Women", "General")
 
 
 def _service_error_from_code(code: str | None) -> str | None:
