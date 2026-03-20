@@ -58,9 +58,7 @@ def load_seed_dependencies() -> tuple[list[dict], list[dict]]:
     ]
     barbers = [
         dict(row)
-        for row in query_db(
-            "SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY id ASC"
-        )
+        for row in query_db("SELECT id, name FROM barbers WHERE is_active = 1 ORDER BY id ASC")
     ]
 
     if not services or not barbers:
@@ -223,9 +221,7 @@ def seed_demo_rows(count: int) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Seed demo appointment rows for the income tab."
-    )
+    parser = argparse.ArgumentParser(description="Seed demo appointment rows for the income tab.")
     parser.add_argument(
         "--count",
         type=int,
